@@ -5,7 +5,7 @@
 
 import type { SmartScoreBreakdown, DetectedPattern } from "./scoring";
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const OPENAI_MODEL = "gpt-5.4-nano";
 
 // ---------- Local rules engine (always works, no API needed) ----------
 
