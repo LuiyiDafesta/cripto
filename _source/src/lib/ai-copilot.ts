@@ -174,7 +174,7 @@ export function analyzeMarketLocal(params: {
   return { signals: signals.slice(0, 8), risks: risks.slice(0, 5), tips: tips.slice(0, 5), summary, regime };
 }
 
-// ---------- Groq LLM integration ----------
+// ---------- OpenAI LLM integration ----------
 
 export interface AIBrief {
   content: string;
@@ -190,7 +190,7 @@ export async function generateAIBrief(params: {
   marketCapChange?: number;
   btcPrice?: number;
 }): Promise<AIBrief> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (!apiKey) {
     // Fallback: generate local brief without LLM
@@ -231,29 +231,29 @@ FORMATO REQUERIDO:
 Sé directo. Sin introducciones genéricas. Hablá como un trader profesional, no como un robot.`;
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENAI_MODEL,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
-        max_tokens: 600,
+        max_tokens: 800,
       }),
     });
 
     if (!res.ok) {
-      console.error("[CipherDesk AI] Groq error:", res.status);
+      console.error("[CipherDesk AI] OpenAI error:", res.status);
       return { content: generateLocalBrief(params), generatedAt: Date.now(), model: "local-fallback" };
     }
 
     const json = await res.json();
     const content = json.choices?.[0]?.message?.content ?? generateLocalBrief(params);
 
-    return { content, generatedAt: Date.now(), model: GROQ_MODEL };
+    return { content, generatedAt: Date.now(), model: OPENAI_MODEL };
   } catch (err) {
     console.error("[CipherDesk AI] Error:", err);
     return { content: generateLocalBrief(params), generatedAt: Date.now(), model: "local-fallback" };
@@ -273,7 +273,7 @@ export async function generateAssetAnalysis(params: {
   atr: number;
   mode?: "técnico" | "principiante";
 }): Promise<AIBrief> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   const { symbol, base, score, price, change24h, fundingRate, patterns, atr: atrVal, mode = "técnico" } = params;
 
   const patternList = patterns.map(p => `${p.type} (${p.direction}, ${p.confidence}%): ${p.description}`).join("; ");
@@ -310,21 +310,21 @@ Sé directo. Sin disclaimers.`;
   const prompt = promptBase + (mode === "técnico" ? promptTech : promptBeg);
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: OPENAI_MODEL,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.6,
-        max_tokens: 400,
+        max_tokens: 800,
       }),
     });
 
     if (!res.ok) return { content: generateLocalAssetBrief(params), generatedAt: Date.now(), model: "local-fallback" };
 
     const json = await res.json();
-    return { content: json.choices?.[0]?.message?.content ?? generateLocalAssetBrief(params), generatedAt: Date.now(), model: GROQ_MODEL };
+    return { content: json.choices?.[0]?.message?.content ?? generateLocalAssetBrief(params), generatedAt: Date.now(), model: OPENAI_MODEL };
   } catch {
     return { content: generateLocalAssetBrief(params), generatedAt: Date.now(), model: "local-fallback" };
   }
@@ -411,8 +411,8 @@ export async function generateGlobalMarketAnalysis(params: {
   ethDominance?: number;
   fearGreed?: number;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Sos un analista cripto institucional. Explicá en español argentino de manera CLARA, RESUMIDA y CONCISA el estado actual del mercado global.
 DATOS:
@@ -425,12 +425,12 @@ Estructurá tu respuesta en 3 párrafos cortos o viñetas:
 2. Qué nos dice la dominancia de BTC (¿estamos en altseason o dominio de Bitcoin?).
 3. Interpretación del índice de miedo y codicia.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 300 }),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 800 }),
   });
-  if (!res.ok) throw new Error("Error en la API de Groq");
+  if (!res.ok) throw new Error("Error en la API de OpenAI");
   return (await res.json()).choices[0].message.content;
 }
 
@@ -441,8 +441,8 @@ export async function generateWhalesAnalysis(params: {
   liqTotalUsd: number;
   liqBias: string;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Analista on-chain. Resumen ejecutivo (en español argentino, jerga cripto) del flujo de ballenas y liquidaciones actuales.
 DATOS:
@@ -456,12 +456,12 @@ FORMATO SUGERIDO:
 2. Análisis rápido de las monedas con funding extremo (oportunidades de reversion).
 3. Conclusión operativa. No excedas las 150 palabras.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 300 }),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 800 }),
   });
-  if (!res.ok) throw new Error("Error en la API de Groq");
+  if (!res.ok) throw new Error("Error en la API de OpenAI");
   return (await res.json()).choices[0].message.content;
 }
 
@@ -470,8 +470,8 @@ export async function generateRiskAnalysis(params: {
   fearGreed: number;
   fundingAvg: number;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Gestor de riesgos cripto institucional. Explicá de forma detallada pero fácil de leer (español argentino) el riesgo macro actual del mercado.
 DATOS:
@@ -483,12 +483,12 @@ Si el funding promedio es > 0.015%, el mercado está muy apalancado en longs.
 Si el Fear & Greed es > 75, hay euforia extrema.
 Hacé un desglose claro de los riesgos sistémicos actuales y cómo debería proteger su cartera un trader minorista. Máximo 200 palabras.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 350 }),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 800 }),
   });
-  if (!res.ok) throw new Error("Error en la API de Groq");
+  if (!res.ok) throw new Error("Error en la API de OpenAI");
   return (await res.json()).choices[0].message.content;
 }
 
@@ -497,8 +497,8 @@ export async function generateScannerAnalysis(params: {
   bearish: Array<any>;
   topScores: Array<any>;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const topBull = params.bullish.slice(0,3).map(x => x.base).join(", ");
   const topBear = params.bearish.slice(0,3).map(x => x.base).join(", ");
@@ -512,11 +512,11 @@ DATOS:
 
 Instrucciones: Explicá si el escáner muestra un sesgo direccional claro o si está mixto. Detallá qué significan estos setups para un day trader o swing trader. Mantenelo en 150-200 palabras y estructurá con viñetas claras.`;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 350 }),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 800 }),
   });
-  if (!res.ok) throw new Error("Error en la API de Groq");
+  if (!res.ok) throw new Error("Error en la API de OpenAI");
   return (await res.json()).choices[0].message.content;
 }
