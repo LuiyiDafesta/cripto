@@ -46,12 +46,12 @@ export const AlertsPage = () => {
   // Build asset options: Binance + CMC Top 50
   const assetOptions = useMemo(() => {
     const opts = allAssets
-      .filter(a => a.source === "both")
+      .filter(a => a.onBinance)
       .map(a => ({ value: a.binanceSymbol || `${a.symbol}USDT`, label: a.symbol, source: "binance" as const }));
     
     // Add top CMC-only coins
     allAssets
-      .filter(a => a.source === "cmc")
+      .filter(a => !a.onBinance)
       .slice(0, 50)
       .forEach(a => {
         opts.push({ value: `${a.symbol}USDT`, label: a.symbol, source: "cmc" as const });

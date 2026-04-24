@@ -402,3 +402,121 @@ function generateLocalAssetBrief(params: {
 
   return out;
 }
+
+// ---------- NEW: Contextual AI Endpoints ----------
+
+export async function generateGlobalMarketAnalysis(params: {
+  totalMarketCap?: number;
+  btcDominance?: number;
+  ethDominance?: number;
+  fearGreed?: number;
+}): Promise<string> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+
+  const prompt = `Sos un analista cripto institucional. Explicá en español argentino de manera CLARA, RESUMIDA y CONCISA el estado actual del mercado global.
+DATOS:
+- Cap. Total: $${params.totalMarketCap?.toLocaleString() ?? "?"}
+- Dom. BTC: ${params.btcDominance?.toFixed(1)}% | Dom. ETH: ${params.ethDominance?.toFixed(1)}%
+- Fear & Greed: ${params.fearGreed ?? "?"}
+
+Estructurá tu respuesta en 3 párrafos cortos o viñetas:
+1. Qué significa la capitalización total actual y si hay entrada/salida de dinero.
+2. Qué nos dice la dominancia de BTC (¿estamos en altseason o dominio de Bitcoin?).
+3. Interpretación del índice de miedo y codicia.`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 300 }),
+  });
+  if (!res.ok) throw new Error("Error en la API de Groq");
+  return (await res.json()).choices[0].message.content;
+}
+
+export async function generateWhalesAnalysis(params: {
+  tradesCount: number;
+  fundingPositive: Array<any>;
+  fundingNegative: Array<any>;
+  liqTotalUsd: number;
+  liqBias: string;
+}): Promise<string> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+
+  const prompt = `Analista on-chain. Resumen ejecutivo (en español argentino, jerga cripto) del flujo de ballenas y liquidaciones actuales.
+DATOS:
+- Liquidaciones recientes: $${params.liqTotalUsd.toLocaleString()} (Sesgo: ${params.liqBias})
+- Monedas con Funding rate exageradamente positivo (Longs saturados): ${params.fundingPositive.map(f => f.symbol).join(", ")}
+- Monedas con Funding negativo (Shorts saturados): ${params.fundingNegative.map(f => f.symbol).join(", ")}
+- Cantidad de operaciones ballena recientes: ${params.tradesCount}
+
+FORMATO SUGERIDO:
+1. Evaluación del riesgo de liquidación masiva ("Squeeze").
+2. Análisis rápido de las monedas con funding extremo (oportunidades de reversion).
+3. Conclusión operativa. No excedas las 150 palabras.`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 300 }),
+  });
+  if (!res.ok) throw new Error("Error en la API de Groq");
+  return (await res.json()).choices[0].message.content;
+}
+
+export async function generateRiskAnalysis(params: {
+  btcDom: number;
+  fearGreed: number;
+  fundingAvg: number;
+}): Promise<string> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+
+  const prompt = `Gestor de riesgos cripto institucional. Explicá de forma detallada pero fácil de leer (español argentino) el riesgo macro actual del mercado.
+DATOS:
+- Dom BTC: ${params.btcDom.toFixed(1)}%
+- Fear & Greed: ${params.fearGreed}
+- Funding Promedio: ${(params.fundingAvg * 100).toFixed(4)}%
+
+Si el funding promedio es > 0.015%, el mercado está muy apalancado en longs.
+Si el Fear & Greed es > 75, hay euforia extrema.
+Hacé un desglose claro de los riesgos sistémicos actuales y cómo debería proteger su cartera un trader minorista. Máximo 200 palabras.`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.6, max_tokens: 350 }),
+  });
+  if (!res.ok) throw new Error("Error en la API de Groq");
+  return (await res.json()).choices[0].message.content;
+}
+
+export async function generateScannerAnalysis(params: {
+  bullish: Array<any>;
+  bearish: Array<any>;
+  topScores: Array<any>;
+}): Promise<string> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) throw new Error("Falta la API Key de Groq para usar la IA.");
+
+  const topBull = params.bullish.slice(0,3).map(x => x.base).join(", ");
+  const topBear = params.bearish.slice(0,3).map(x => x.base).join(", ");
+  const bestScoring = params.topScores.slice(0,3).map(x => `${x.base}(${x.score})`).join(", ");
+
+  const prompt = `Sos un experto en análisis técnico cripto y escáner algorítmico. Dame un resumen ejecutivo en español argentino sobre las oportunidades detectadas AHORA en el escáner.
+DATOS:
+- Cantidad de señales alcistas: ${params.bullish.length} (Principales: ${topBull || "Ninguna"})
+- Cantidad de señales bajistas: ${params.bearish.length} (Principales: ${topBear || "Ninguna"})
+- Mejores Smart Scores del mercado: ${bestScoring}
+
+Instrucciones: Explicá si el escáner muestra un sesgo direccional claro o si está mixto. Detallá qué significan estos setups para un day trader o swing trader. Mantenelo en 150-200 palabras y estructurá con viñetas claras.`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: "user", content: prompt }], temperature: 0.7, max_tokens: 350 }),
+  });
+  if (!res.ok) throw new Error("Error en la API de Groq");
+  return (await res.json()).choices[0].message.content;
+}

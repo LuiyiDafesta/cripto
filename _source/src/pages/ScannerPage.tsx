@@ -4,6 +4,7 @@ import { ChangeChip } from "@/components/ChangeChip";
 import { AssetIcon } from "@/components/AssetIcon";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SourceBadge } from "@/components/SourceBadge";
+import { AIContextPanel } from "@/components/AIContextPanel";
 import { useAllSmartScores } from "@/lib/useScores";
 import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { use24hTickers } from "@/lib/api";
@@ -15,45 +16,6 @@ import { cn } from "@/lib/utils";
 import { Bot, RefreshCw, Sparkles } from "lucide-react";
 
 type SignalType = "all" | "bullish" | "bearish";
-
-/** Generate a local AI-style summary of scanner results */
-function generateScannerSummary(detections: any[]): string {
-  if (detections.length === 0) return "No hay señales significativas en este momento. El mercado está en calma.";
-
-  const bullish = detections.filter(d => d.patterns.some((p: any) => p.direction === "bullish"));
-  const bearish = detections.filter(d => d.patterns.some((p: any) => p.direction === "bearish"));
-
-  const topBullNames = bullish.slice(0, 3).map(d => d.base).join(", ");
-  const topBearNames = bearish.slice(0, 3).map(d => d.base).join(", ");
-
-  let summary = "";
-
-  if (bullish.length > bearish.length * 2) {
-    summary += `🟢 **Mercado con sesgo alcista.** Se detectaron ${bullish.length} señales alcistas vs ${bearish.length} bajistas. `;
-    summary += `Las monedas con más fuerza alcista son: ${topBullNames || "—"}. `;
-    summary += `\n\n💡 **Sugerencia:** Podría ser buen momento para buscar entradas en largo (compra) en las monedas con Score alto y señales alcistas. `;
-    summary += `Usá el Validador de Trades para verificar tu entrada antes de operar.`;
-  } else if (bearish.length > bullish.length * 2) {
-    summary += `🔴 **Mercado con sesgo bajista.** Se detectaron ${bearish.length} señales bajistas vs ${bullish.length} alcistas. `;
-    summary += `Las monedas con más presión vendedora son: ${topBearNames || "—"}. `;
-    summary += `\n\n💡 **Sugerencia:** Es momento de cautela. Evitá abrir posiciones largas (compras) hasta que el mercado muestre recuperación. `;
-    summary += `Si ya tenés posiciones abiertas, revisá tus stop losses.`;
-  } else {
-    summary += `🟡 **Mercado mixto.** ${bullish.length} señales alcistas y ${bearish.length} bajistas — sin una dirección clara. `;
-    if (topBullNames) summary += `Destacan al alza: ${topBullNames}. `;
-    if (topBearNames) summary += `Bajo presión: ${topBearNames}. `;
-    summary += `\n\n💡 **Sugerencia:** En mercados laterales, es mejor esperar confirmación antes de operar. `;
-    summary += `Buscá monedas con Score > 70 y señales claras en una sola dirección.`;
-  }
-
-  // Add specific actionable tips
-  const strongBuys = bullish.filter(d => d.score >= 70);
-  if (strongBuys.length > 0) {
-    summary += `\n\n🎯 **Oportunidades destacadas:** ${strongBuys.map(d => `${d.base} (Score ${d.score})`).join(", ")} tienen buen score técnico + señales alcistas.`;
-  }
-
-  return summary;
-}
 
 export const ScannerPage = () => {
   const navigate = useNavigate();
@@ -83,7 +45,7 @@ export const ScannerPage = () => {
   // CMC momentum detections (price-based)
   const cmcDetections = useMemo(() => {
     return cmcAssets
-      .filter(a => a.source === "cmc")
+      .filter(a => !a.onBinance)
       .filter(a => Math.abs(a.change24h) > 5 || Math.abs(a.change7d) > 15)
       .map(a => {
         const patterns: any[] = [];
@@ -122,9 +84,6 @@ export const ScannerPage = () => {
     if (filter === "bullish") return all.filter(d => d.patterns.some((p: any) => p.direction === "bullish"));
     return all.filter(d => d.patterns.some((p: any) => p.direction === "bearish"));
   }, [binanceDetections, cmcDetections, filter]);
-
-  // AI Summary
-  const aiSummary = useMemo(() => generateScannerSummary(allDetections), [allDetections]);
 
   const filterButtons: { key: SignalType; label: string }[] = [
     { key: "all", label: "Todas" },
@@ -201,28 +160,15 @@ export const ScannerPage = () => {
       </div>
 
       {/* AI Analysis Box */}
-      <Panel
-        title={
-          <span className="flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-primary-glow" />
-            Análisis IA del Scanner
-            <InfoTooltip title="Análisis Automático" description="Resumen generado automáticamente basado en las señales detectadas. Te indica la dirección general del mercado, las mejores oportunidades y qué acciones tomar. Se actualiza cada vez que cambian las señales." />
-          </span>
-        }
-        glow="violet"
-      >
-        <div className="p-5">
-          <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
-            {aiSummary.split("**").map((part, i) =>
-              i % 2 === 1 ? <strong key={i} className="text-foreground">{part}</strong> : <span key={i}>{part}</span>
-            )}
-          </div>
-          <div className="mt-4 pt-3 border-t border-hairline flex items-center gap-2">
-            <Bot className="h-4 w-4 text-primary-glow" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Análisis local · Basado en {allDetections.length} señales detectadas</span>
-          </div>
-        </div>
-      </Panel>
+      <AIContextPanel
+        title="Análisis IA del Scanner"
+        defaultText="Generá un resumen ejecutivo con la Inteligencia Artificial analizando los setups actuales."
+        onAnalyze={() => import('@/lib/ai-copilot').then(m => m.generateScannerAnalysis({
+          bullish: allDetections.filter(d => d.patterns.some((p: any) => p.direction === "bullish")),
+          bearish: allDetections.filter(d => d.patterns.some((p: any) => p.direction === "bearish")),
+          topScores: allDetections.filter(d => d.score >= 60).sort((a,b) => b.score - a.score),
+        }))}
+      />
     </div>
   );
 };

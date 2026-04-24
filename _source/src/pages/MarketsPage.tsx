@@ -99,9 +99,8 @@ export const MarketsPage = () => {
   const gmq = gm?.quote?.USD;
 
   const handleClick = (a: UnifiedAsset) => {
-    if (a.onBinance && a.binanceSymbol) {
-      navigate(`/app/asset/${a.binanceSymbol}`);
-    }
+    const targetSymbol = a.binanceSymbol || `${a.symbol}USDT`;
+    navigate(`/app/asset/${targetSymbol}`);
   };
 
   return (
@@ -186,8 +185,7 @@ export const MarketsPage = () => {
                     key={a.cmcId}
                     onClick={() => handleClick(a)}
                     className={cn(
-                      "border-b border-hairline/50 hover:bg-surface-2/40 transition",
-                      a.onBinance ? "cursor-pointer" : "cursor-default opacity-80"
+                      "border-b border-hairline/50 hover:bg-surface-2/40 transition cursor-pointer"
                     )}
                   >
                     <td className="py-2.5 pl-4 num text-muted-foreground">{a.cmcRank}</td>

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Panel } from "@/components/Panel";
 import { AssetIcon } from "@/components/AssetIcon";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { AIContextPanel } from "@/components/AIContextPanel";
 import { useAggTrades, useFundingRates } from "@/lib/api";
 import { useLiveLiquidations, useLiquidationStats } from "@/lib/liquidations";
 import { compactUsd, fmtPrice, fmtTime } from "@/lib/format";
@@ -16,7 +17,7 @@ export const WhalesPage = () => {
   const [min, setMin] = useState(50_000);
   const { allAssets } = useUnifiedAssets("all");
   const symbols = useMemo(() => 
-    allAssets.filter(a => a.source === "both").slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
+    allAssets.filter(a => a.onBinance).slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
   , [allAssets]);
   const trades = useAggTrades(symbols, min, 100);
   const { data: funding } = useFundingRates();
@@ -66,6 +67,17 @@ export const WhalesPage = () => {
           ))}
         </div>
       </div>
+
+      <AIContextPanel
+        title="Análisis Institucional y Flujos de Capital"
+        onAnalyze={() => import('@/lib/ai-copilot').then(m => m.generateWhalesAnalysis({
+          tradesCount: trades.length,
+          fundingPositive: fundingExtremes.p,
+          fundingNegative: fundingExtremes.n,
+          liqTotalUsd: liqStats.totalLongLiqUsd + liqStats.totalShortLiqUsd,
+          liqBias: liqStats.bias,
+        }))}
+      />
 
       <div className="grid grid-cols-12 gap-4">
         <Panel title="Cinta de operaciones en vivo" className="col-span-12 lg:col-span-8">

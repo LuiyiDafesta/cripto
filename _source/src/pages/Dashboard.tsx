@@ -4,6 +4,7 @@ import { Sparkline } from "@/components/Sparkline";
 import { AssetIcon } from "@/components/AssetIcon";
 import { ChangeChip } from "@/components/ChangeChip";
 import { AICopilot } from "@/components/AICopilot";
+import { AIContextPanel } from "@/components/AIContextPanel";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { use24hTickers, useFearGreed, useFundingRates, useGlobalMacro, useAggTrades } from "@/lib/api";
 import { useAllSmartScores } from "@/lib/useScores";
@@ -55,7 +56,7 @@ export const Dashboard = () => {
 
   // Track whales for Top 50 Binance assets
   const whaleSymbols = useMemo(() => 
-    allAssets.filter(a => a.source === "both").slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
+    allAssets.filter(a => a.onBinance).slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
   , [allAssets]);
   const whaleTrades = useAggTrades(whaleSymbols, 100_000, 10);
 
@@ -136,6 +137,16 @@ export const Dashboard = () => {
           value={compactUsd(tickers?.reduce((s, t) => s + t.quoteVolume, 0))}
         />
       </div>
+
+      <AIContextPanel
+        title="Contexto Global del Mercado"
+        onAnalyze={() => import('@/lib/ai-copilot').then(m => m.generateGlobalMarketAnalysis({
+          totalMarketCap: macro?.totalMarketCap,
+          btcDominance: macro?.btcDominance,
+          ethDominance: macro?.ethDominance,
+          fearGreed: fngVal,
+        }))}
+      />
 
       <div className="grid grid-cols-12 gap-4">
         {/* Left: Smart Score top 10 */}

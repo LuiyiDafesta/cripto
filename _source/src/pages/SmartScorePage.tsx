@@ -125,8 +125,8 @@ export const SmartScorePage = () => {
   // Filter by source
   const filtered = useMemo(() => {
     if (sourceFilter === "all") return merged;
-    if (sourceFilter === "binance") return merged.filter(a => a.source === "both" || a.source === "binance");
-    return merged.filter(a => a.source === "cmc");
+    if (sourceFilter === "binance") return merged.filter(a => a.onBinance);
+    return merged.filter(a => !a.onBinance);
   }, [merged, sourceFilter]);
 
   // Sort

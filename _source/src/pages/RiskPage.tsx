@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { AIContextPanel } from "@/components/AIContextPanel";
 import { useAppStore } from "@/lib/store";
-import { use24hTickers, useKlines, useMultiKlines } from "@/lib/api";
+import { use24hTickers, useKlines, useMultiKlines, useGlobalMacro, useFearGreed, useFundingRates } from "@/lib/api";
 import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { compactUsd, fmtPrice } from "@/lib/format";
 import { atr, assessTrade, computeCorrelationMatrix } from "@/lib/scoring";
@@ -20,9 +21,12 @@ export const RiskPage = () => {
   const addPosition = useAppStore((s) => s.addPosition);
   const removePosition = useAppStore((s) => s.removePosition);
   const { data: tickers } = use24hTickers();
+  const { data: macro } = useGlobalMacro();
+  const { data: fng } = useFearGreed();
+  const { data: funding } = useFundingRates();
   const { allAssets } = useUnifiedAssets("all");
 
-  const binanceAssets = useMemo(() => allAssets.filter(a => a.source === "both"), [allAssets]);
+  const binanceAssets = useMemo(() => allAssets.filter(a => a.onBinance), [allAssets]);
   const corrSymbols = useMemo(() => binanceAssets.slice(0, 10).map(a => a.binanceSymbol || `${a.symbol}USDT`), [binanceAssets]);
 
   // Add position form
@@ -70,6 +74,15 @@ export const RiskPage = () => {
         </div>
         <p className="text-sm text-muted-foreground">Simulación de portafolio, validación de trades y matriz de correlación.</p>
       </div>
+
+      <AIContextPanel
+        title="Evaluación Sistémica de Riesgo"
+        onAnalyze={() => import('@/lib/ai-copilot').then(m => m.generateRiskAnalysis({
+          btcDom: macro?.btcDominance ?? 50,
+          fearGreed: fng?.[0]?.value ?? 50,
+          fundingAvg: funding ? funding.reduce((s, f) => s + f.lastFundingRate, 0) / funding.length : 0,
+        }))}
+      />
 
       <div className="grid grid-cols-12 gap-4">
         {/* Portfolio sim */}

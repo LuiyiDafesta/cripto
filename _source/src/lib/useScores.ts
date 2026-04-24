@@ -20,7 +20,7 @@ export function useAllSmartScores() {
   
   // Extract only Binance symbols for klines fetching
   const binanceSymbols = useMemo(() => 
-    allAssets.filter(a => a.source === "both").map(a => a.binanceSymbol || `${a.symbol}USDT`),
+    allAssets.filter(a => a.onBinance).map(a => a.binanceSymbol || `${a.symbol}USDT`),
   [allAssets]);
 
   const klines4h = useMultiKlines(binanceSymbols, "4h", 60);
@@ -40,7 +40,7 @@ export function useAllSmartScores() {
     const btcDom = macro.data?.btcDominance;
 
     const result: AssetScoreRow[] = allAssets.map((a) => {
-      const isBinance = a.source === "both";
+      const isBinance = a?.onBinance;
       const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
       
       const k4a = k4[fetchSymbol] ?? [];
