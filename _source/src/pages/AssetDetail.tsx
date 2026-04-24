@@ -114,9 +114,9 @@ export const AssetDetail = () => {
   const assetNews = useMemo(() => {
     if (!allNews) return [];
     return allNews.filter(n => n.relatedAssets.includes(symbol) ||
-      n.title.toLowerCase().includes((asset?.base ?? "").toLowerCase())
+      n.title.toLowerCase().includes((asset?.base ?? baseName).toLowerCase())
     ).slice(0, 8);
-  }, [allNews, symbol, asset]);
+  }, [allNews, symbol, asset, baseName]);
 
   const handleAIAnalysis = async () => {
     if (!breakdown || !lastPrice) return;
@@ -202,15 +202,15 @@ export const AssetDetail = () => {
             <Stat label="Precio" value={`$${fmtPrice(cmcQuote.price)}`} />
             <Stat label="Cap. Mercado" value={compactUsd(cmcQuote.market_cap)} />
             <Stat label="Volumen 24h" value={compactUsd(cmcQuote.volume_24h)} />
-            <Stat label="1h" value={`${cmcQuote.percent_change_1h >= 0 ? '+' : ''}${cmcQuote.percent_change_1h.toFixed(2)}%`} color={cmcQuote.percent_change_1h >= 0 ? "text-bull" : "text-bear"} />
-            <Stat label="24h" value={`${cmcQuote.percent_change_24h >= 0 ? '+' : ''}${cmcQuote.percent_change_24h.toFixed(2)}%`} color={cmcQuote.percent_change_24h >= 0 ? "text-bull" : "text-bear"} />
-            <Stat label="7d" value={`${cmcQuote.percent_change_7d >= 0 ? '+' : ''}${cmcQuote.percent_change_7d.toFixed(2)}%`} color={cmcQuote.percent_change_7d >= 0 ? "text-bull" : "text-bear"} />
-            <Stat label="30d" value={`${cmcQuote.percent_change_30d >= 0 ? '+' : ''}${cmcQuote.percent_change_30d.toFixed(2)}%`} color={cmcQuote.percent_change_30d >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="1h" value={`${(cmcQuote.percent_change_1h ?? 0) >= 0 ? '+' : ''}${(cmcQuote.percent_change_1h ?? 0).toFixed(2)}%`} color={(cmcQuote.percent_change_1h ?? 0) >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="24h" value={`${(cmcQuote.percent_change_24h ?? 0) >= 0 ? '+' : ''}${(cmcQuote.percent_change_24h ?? 0).toFixed(2)}%`} color={(cmcQuote.percent_change_24h ?? 0) >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="7d" value={`${(cmcQuote.percent_change_7d ?? 0) >= 0 ? '+' : ''}${(cmcQuote.percent_change_7d ?? 0).toFixed(2)}%`} color={(cmcQuote.percent_change_7d ?? 0) >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="30d" value={`${(cmcQuote.percent_change_30d ?? 0) >= 0 ? '+' : ''}${(cmcQuote.percent_change_30d ?? 0).toFixed(2)}%`} color={(cmcQuote.percent_change_30d ?? 0) >= 0 ? "text-bull" : "text-bear"} />
             <Stat label="Ranking CMC" value={`#${cmcCoin?.cmc_rank ?? '—'}`} />
             <Stat label="Suministro Circ." value={cmcCoin?.circulating_supply ? compactUsd(cmcCoin.circulating_supply).replace('$', '') : '—'} />
             <Stat label="FDV" value={compactUsd(cmcQuote.fully_diluted_market_cap)} />
-            <Stat label="Dominancia" value={`${cmcQuote.market_cap_dominance.toFixed(3)}%`} />
-            <Stat label="Vol. Cambio 24h" value={`${cmcQuote.volume_change_24h >= 0 ? '+' : ''}${cmcQuote.volume_change_24h.toFixed(1)}%`} color={cmcQuote.volume_change_24h >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="Dominancia" value={`${(cmcQuote.market_cap_dominance ?? 0).toFixed(3)}%`} />
+            <Stat label="Vol. Cambio 24h" value={`${(cmcQuote.volume_change_24h ?? 0) >= 0 ? '+' : ''}${(cmcQuote.volume_change_24h ?? 0).toFixed(1)}%`} color={(cmcQuote.volume_change_24h ?? 0) >= 0 ? "text-bull" : "text-bear"} />
           </div>
         </div>
       )}
