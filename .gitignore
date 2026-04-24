@@ -1,0 +1,20 @@
+# ============================================
+# GITIGNORE para deploy en Ferozo
+# Git SOLO trackea archivos de producción
+# ============================================
+
+# Ignorar TODO por defecto
+*
+
+# Permitir archivos de producción (deploy)
+!index.html
+!.htaccess
+!favicon.ico
+!placeholder.svg
+!robots.txt
+!FEROZO_DEPLOY_WORKFLOW.md
+!_source/
+!_source/**
+
+# Permitir este mismo gitignore
+!.gitignore
