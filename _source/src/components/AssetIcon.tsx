@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ASSETS, getAsset } from "@/lib/assets";
+import { getAsset } from "@/lib/assets";
 
 interface AssetIconProps {
   symbol: string;
@@ -49,5 +49,3 @@ export const AssetIcon = ({ symbol, size = 24, className }: AssetIconProps) => {
     </div>
   );
 };
-
-export const KNOWN_BASES = ASSETS.map((a) => a.base);

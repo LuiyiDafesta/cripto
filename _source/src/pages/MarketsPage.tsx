@@ -4,7 +4,6 @@ import { AssetIcon } from "@/components/AssetIcon";
 import { ChangeChip } from "@/components/ChangeChip";
 import { useCMCListings, useCMCGlobalMetrics, cmcToUnified, type UnifiedAsset } from "@/lib/coinmarketcap";
 import { use24hTickers } from "@/lib/api";
-import { ASSETS } from "@/lib/assets";
 import { compactUsd, fmtPct, fmtPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +31,6 @@ export const MarketsPage = () => {
   // Build set of Binance-available symbols
   const binanceSymbols = useMemo(() => {
     const s = new Set<string>();
-    ASSETS.forEach(a => s.add(a.symbol));
     tickers?.forEach(t => s.add(t.symbol));
     return s;
   }, [tickers]);

@@ -7,9 +7,9 @@ import { AICopilot } from "@/components/AICopilot";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { use24hTickers, useFearGreed, useFundingRates, useGlobalMacro, useAggTrades } from "@/lib/api";
 import { useAllSmartScores } from "@/lib/useScores";
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { compactUsd, fmtPct, fmtPrice, scoreColor, timeAgo } from "@/lib/format";
 import { detectPatterns } from "@/lib/scoring";
-import { ASSETS } from "@/lib/assets";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Bell, Flame, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,8 +51,13 @@ export const Dashboard = () => {
   const { data: fng } = useFearGreed();
   const { data: funding } = useFundingRates();
   const { rows } = useAllSmartScores();
-  const whaleSymbols = useMemo(() => ASSETS.map(a => a.symbol), []);
-  const whaleTrades = useAggTrades(whaleSymbols, 50_000, 10);
+  const { allAssets } = useUnifiedAssets("all");
+
+  // Track whales for Top 50 Binance assets
+  const whaleSymbols = useMemo(() => 
+    allAssets.filter(a => a.source === "both").slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
+  , [allAssets]);
+  const whaleTrades = useAggTrades(whaleSymbols, 100_000, 10);
 
   const tickerMap = useMemo(() => {
     const m: Record<string, typeof tickers extends Array<infer T> ? T : never> = {} as any;
@@ -94,10 +99,27 @@ export const Dashboard = () => {
   return (
     <div className="p-4 lg:p-6 space-y-4">
       {/* Macro strip */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <MacroCard label="Cap. Total" value={compactUsd(macro?.totalMarketCap)} change={macro?.marketCapChangePct24h} />
-        <MacroCard label="Dom. BTC" value={macro ? `${macro.btcDominance.toFixed(2)}%` : "—"} />
-        <MacroCard label="Dom. ETH" value={macro ? `${macro.ethDominance.toFixed(2)}%` : "—"} />
+        
+        {/* Dominance visualizer takes 2 cols */}
+        <div className="col-span-2 glass rounded-lg px-4 py-3 flex flex-col justify-center">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Dominancia del Mercado</span>
+            <span className="text-xs font-semibold">BTC {macro?.btcDominance.toFixed(1)}%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-surface-2 overflow-hidden flex">
+            <div className="h-full bg-bull" style={{ width: `${macro?.btcDominance ?? 0}%` }} title={`BTC: ${macro?.btcDominance.toFixed(1)}%`} />
+            <div className="h-full bg-primary/60" style={{ width: `${macro?.ethDominance ?? 0}%` }} title={`ETH: ${macro?.ethDominance.toFixed(1)}%`} />
+            <div className="h-full bg-muted" style={{ width: `${100 - (macro?.btcDominance ?? 0) - (macro?.ethDominance ?? 0)}%` }} title="Altcoins" />
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+            <span>BTC</span>
+            <span>ETH {macro?.ethDominance.toFixed(1)}%</span>
+            <span>Alts {(100 - (macro?.btcDominance ?? 0) - (macro?.ethDominance ?? 0)).toFixed(1)}%</span>
+          </div>
+        </div>
+
         <MacroCard label="Fear & Greed" value={fngVal != null ? String(fngVal) : "—"} sub={fng?.[0]?.classification} />
         <MacroCard
           label="Volatilidad media"
@@ -157,10 +179,14 @@ export const Dashboard = () => {
         {/* Center: heatmap + opportunity feed */}
         <div className="col-span-12 lg:col-span-6 space-y-4">
           <Panel title={<span className="flex items-center gap-1.5">Mapa de calor · 24h <InfoTooltip title="Mapa de Calor" description="Cada cuadro representa una moneda. Verde = subió, rojo = bajó en las últimas 24 horas. Cuanto más intenso el color, mayor fue el movimiento. Hacé click en cualquiera para ver su detalle completo." /></span>} subtitle="Color = % cambio · Tamaño = nivel de volumen">
-            <div className="p-3 grid grid-cols-4 md:grid-cols-5 gap-2">
-              {ASSETS.map((a) => {
-                const t = tickerMap[a.symbol];
-                return <HeatCell key={a.symbol} symbol={a.symbol} change={t?.priceChangePercent} vol={t?.quoteVolume} />;
+            <div className="p-3 grid grid-cols-4 md:grid-cols-5 gap-2 max-h-[420px] overflow-auto">
+              {allAssets.map((a) => {
+                const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
+                const t = tickerMap[fetchSymbol];
+                // For CMC-only assets, use the CMC data as fallback if ticker is missing
+                const change = t?.priceChangePercent ?? a.change24h;
+                const vol = t?.quoteVolume ?? a.volume24h;
+                return <HeatCell key={fetchSymbol} symbol={fetchSymbol} change={change} vol={vol} />;
               })}
             </div>
           </Panel>

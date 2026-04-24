@@ -15,7 +15,8 @@ import { useCMCListings } from "@/lib/coinmarketcap";
 import { useAppStore } from "@/lib/store";
 import { compactUsd, fmtPct, fmtPrice, scoreColor } from "@/lib/format";
 import { ArrowLeft, Star, AlertTriangle, CheckCircle2, XCircle, Bot, RefreshCw, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
-import { getAsset, ASSETS } from "@/lib/assets";
+import { getAsset } from "@/lib/assets";
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { cn } from "@/lib/utils";
 import { SourceBadge } from "@/components/SourceBadge";
 import { InfoTooltip } from "@/components/InfoTooltip";
@@ -60,6 +61,8 @@ export const AssetDetail = () => {
 
   // CMC data for this coin
   const { data: cmcData } = useCMCListings(100);
+  const { allAssets } = useUnifiedAssets("all");
+
   const cmcCoin = useMemo(() => {
     if (!cmcData) return null;
     return cmcData.find(c => `${c.symbol}USDT` === symbol || c.symbol === baseName);
@@ -104,6 +107,7 @@ export const AssetDetail = () => {
   // AI analysis
   const [aiBrief, setAiBrief] = useState<AIBrief | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<"técnico" | "principiante">("técnico");
 
   // Filtered news for this asset
   const { data: allNews } = useRealNews(50);
@@ -122,7 +126,7 @@ export const AssetDetail = () => {
         symbol, base: asset?.base ?? symbol.replace("USDT", ""),
         score: breakdown, price: lastPrice,
         change24h: ticker?.priceChangePercent ?? 0,
-        fundingRate, patterns, atr: atrVal,
+        fundingRate, patterns, atr: atrVal, mode: aiMode,
       });
       setAiBrief(result);
     } catch (e) { console.error(e); }
@@ -331,14 +335,23 @@ export const AssetDetail = () => {
                     <Bot className="h-4 w-4 text-primary-glow" />
                     Análisis inteligente de {baseName}
                   </div>
-                  <button
-                    onClick={handleAIAnalysis}
-                    disabled={aiLoading || (!breakdown && !cmcQuote)}
-                    className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary-glow hover:bg-primary/20 transition flex items-center gap-1"
-                  >
-                    <RefreshCw className={cn("h-3 w-3", aiLoading && "animate-spin")} />
-                    {aiLoading ? "Analizando…" : "Analizar con IA"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Select value={aiMode} onValueChange={(v: any) => { setAiMode(v); setAiBrief(null); }}>
+                      <SelectTrigger className="h-7 text-[10px] w-28 bg-surface-2"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="técnico">Técnico</SelectItem>
+                        <SelectItem value="principiante">Principiante</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <button
+                      onClick={handleAIAnalysis}
+                      disabled={aiLoading || (!breakdown && !cmcQuote)}
+                      className="text-[10px] px-2 py-1.5 rounded bg-primary/10 text-primary-glow hover:bg-primary/20 transition flex items-center gap-1 font-medium"
+                    >
+                      <RefreshCw className={cn("h-3 w-3", aiLoading && "animate-spin")} />
+                      {aiLoading ? "Analizando…" : "Analizar con IA"}
+                    </button>
+                  </div>
                 </div>
                 {aiBrief ? (
                   <div className="text-sm leading-relaxed whitespace-pre-line">{aiBrief.content}</div>
@@ -366,13 +379,14 @@ export const AssetDetail = () => {
             </TabsContent>
             <TabsContent value="corr" className="p-4 pt-0">
               <div className="grid grid-cols-5 md:grid-cols-10 gap-1.5">
-                {ASSETS.slice(0, 20).map((a) => {
-                  const tx = tickers?.find((x) => x.symbol === a.symbol);
+                {allAssets?.filter(a => a.source === "both").slice(0, 20).map((a) => {
+                  const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
+                  const tx = tickers?.find((x) => x.symbol === fetchSymbol);
                   const c = (tx?.priceChangePercent ?? 0) * (ticker?.priceChangePercent ?? 0) > 0 ? Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10)) : -Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10));
                   const bg = c >= 0 ? `hsl(152 75% 45% / ${Math.abs(c) * 0.6 + 0.1})` : `hsl(350 85% 55% / ${Math.abs(c) * 0.6 + 0.1})`;
                   return (
-                    <div key={a.symbol} className="aspect-square rounded flex items-center justify-center text-[10px] num font-semibold" style={{ background: bg }}>
-                      {a.base}
+                    <div key={fetchSymbol} className="aspect-square rounded flex items-center justify-center text-[10px] num font-semibold" style={{ background: bg }}>
+                      {a.symbol}
                     </div>
                   );
                 })}

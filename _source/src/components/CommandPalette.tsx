@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { ASSETS } from "@/lib/assets";
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { LayoutDashboard, Radar, Trophy, Waves, ShieldCheck, Newspaper, Bell, Settings } from "lucide-react";
 
 interface Props { open: boolean; onClose: () => void; }
@@ -20,15 +20,17 @@ export const CommandPalette = ({ open, onClose }: Props) => {
   useEffect(() => setMounted(true), []);
   const go = (path: string) => { navigate(path); onClose(); };
 
+  const { allAssets } = useUnifiedAssets("all");
+
   return (
     <CommandDialog open={open} onOpenChange={(v) => !v && onClose()}>
       <CommandInput placeholder="Buscar activos o ir a…" />
       <CommandList>
         <CommandEmpty>Sin resultados.</CommandEmpty>
         <CommandGroup heading="Activos">
-          {ASSETS.map((a) => (
-            <CommandItem key={a.symbol} value={`${a.base} ${a.name}`} onSelect={() => go(`/app/asset/${a.symbol}`)}>
-              <span className="font-semibold mr-2">{a.base}</span>
+          {allAssets.map((a) => (
+            <CommandItem key={a.symbol} value={`${a.symbol} ${a.name}`} onSelect={() => go(`/app/asset/${a.binanceSymbol || `${a.symbol}USDT`}`)}>
+              <span className="font-semibold mr-2">{a.symbol}</span>
               <span className="text-muted-foreground">{a.name}</span>
             </CommandItem>
           ))}

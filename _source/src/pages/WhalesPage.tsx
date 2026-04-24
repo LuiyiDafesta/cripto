@@ -4,16 +4,20 @@ import { AssetIcon } from "@/components/AssetIcon";
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useAggTrades, useFundingRates } from "@/lib/api";
 import { useLiveLiquidations, useLiquidationStats } from "@/lib/liquidations";
-import { ASSETS } from "@/lib/assets";
 import { compactUsd, fmtPrice, fmtTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Zap, Wifi, WifiOff } from "lucide-react";
+
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 
 const FILTERS = [50_000, 250_000, 500_000, 1_000_000, 5_000_000];
 
 export const WhalesPage = () => {
   const [min, setMin] = useState(50_000);
-  const symbols = useMemo(() => ASSETS.map((a) => a.symbol), []);
+  const { allAssets } = useUnifiedAssets("all");
+  const symbols = useMemo(() => 
+    allAssets.filter(a => a.source === "both").slice(0, 50).map(a => a.binanceSymbol || `${a.symbol}USDT`)
+  , [allAssets]);
   const trades = useAggTrades(symbols, min, 100);
   const { data: funding } = useFundingRates();
 

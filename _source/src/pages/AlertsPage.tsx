@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { SourceBadge } from "@/components/SourceBadge";
 import { useAppStore, AlertRule } from "@/lib/store";
-import { ASSETS } from "@/lib/assets";
 import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { AssetIcon } from "@/components/AssetIcon";
 import { timeAgo } from "@/lib/format";
@@ -46,7 +45,9 @@ export const AlertsPage = () => {
 
   // Build asset options: Binance + CMC Top 50
   const assetOptions = useMemo(() => {
-    const opts = ASSETS.map(a => ({ value: a.symbol, label: a.base, source: "binance" as const }));
+    const opts = allAssets
+      .filter(a => a.source === "both")
+      .map(a => ({ value: a.binanceSymbol || `${a.symbol}USDT`, label: a.symbol, source: "binance" as const }));
     
     // Add top CMC-only coins
     allAssets

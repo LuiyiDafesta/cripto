@@ -80,21 +80,22 @@ export function use24hTickers() {
   return useQuery({
     queryKey: ["binance", "ticker24h-batch"],
     queryFn: async () => {
-      const symbols = ASSETS.map((a) => a.symbol);
-      const url = `${BINANCE_SPOT}/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(symbols))}`;
+      const url = `${BINANCE_SPOT}/api/v3/ticker/24hr`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch tickers");
       const data = await res.json();
-      return (data as any[]).map((d) => ({
-        symbol: d.symbol,
-        lastPrice: +d.lastPrice,
-        priceChangePercent: +d.priceChangePercent,
-        highPrice: +d.highPrice,
-        lowPrice: +d.lowPrice,
-        volume: +d.volume,
-        quoteVolume: +d.quoteVolume,
-        openPrice: +d.openPrice,
-      })) as Ticker24h[];
+      return (data as any[])
+        .filter(d => d.symbol.endsWith("USDT"))
+        .map((d) => ({
+          symbol: d.symbol,
+          lastPrice: +d.lastPrice,
+          priceChangePercent: +d.priceChangePercent,
+          highPrice: +d.highPrice,
+          lowPrice: +d.lowPrice,
+          volume: +d.volume,
+          quoteVolume: +d.quoteVolume,
+          openPrice: +d.openPrice,
+        })) as Ticker24h[];
     },
     refetchInterval: 8000,
     staleTime: 5000,
@@ -153,9 +154,8 @@ export function useFundingRates() {
       const res = await fetch(`${BINANCE_FUTURES}/fapi/v1/premiumIndex`);
       if (!res.ok) throw new Error("Funding fetch failed");
       const data = (await res.json()) as any[];
-      const set = new Set(ASSETS.map((a) => a.perpSymbol));
       return data
-        .filter((d) => set.has(d.symbol))
+        .filter((d) => d.symbol.endsWith("USDT"))
         .map<FundingInfo>((d) => ({
           symbol: d.symbol,
           lastFundingRate: +d.lastFundingRate,

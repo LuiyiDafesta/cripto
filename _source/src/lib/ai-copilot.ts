@@ -271,9 +271,10 @@ export async function generateAssetAnalysis(params: {
   fundingRate?: number;
   patterns: DetectedPattern[];
   atr: number;
+  mode?: "técnico" | "principiante";
 }): Promise<AIBrief> {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  const { symbol, base, score, price, change24h, fundingRate, patterns, atr: atrVal } = params;
+  const { symbol, base, score, price, change24h, fundingRate, patterns, atr: atrVal, mode = "técnico" } = params;
 
   const patternList = patterns.map(p => `${p.type} (${p.direction}, ${p.confidence}%): ${p.description}`).join("; ");
 
@@ -281,8 +282,8 @@ export async function generateAssetAnalysis(params: {
     return { content: generateLocalAssetBrief(params), generatedAt: Date.now(), model: "local" };
   }
 
-  const prompt = `Sos analista cripto profesional. Analizá ${base}/USDT en español argentino (máximo 150 palabras).
-
+  const promptBase = `Sos analista cripto profesional. Analizá ${base}/USDT en español argentino (máximo 150 palabras) para un perfil **${mode.toUpperCase()}**.
+  
 DATOS:
 - Precio: $${price.toLocaleString()} (${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}% 24h)
 - Smart Score: ${score.total}/100
@@ -290,15 +291,23 @@ DATOS:
   - Fuerza Relativa: ${score.relStrength} | Funding: ${score.funding} | OI: ${score.oi}
 - ATR(14): $${atrVal.toFixed(2)}
 - Funding Rate: ${fundingRate != null ? (fundingRate * 100).toFixed(4) + "%" : "N/A"}
-- Patrones: ${patternList || "Ninguno detectado"}
+- Patrones: ${patternList || "Ninguno detectado"}`;
 
-RESPONDÉ con:
-1. Sesgo actual (alcista/bajista/neutral) y por qué
-2. Si conviene operar ahora o esperar
-3. Entrada sugerida, stop y target si hay setup
-4. Riesgo principal
+  const promptTech = `
+RESPONDÉ con jerga técnica:
+1. Sesgo actual (alcista/bajista/neutral) argumentando con la data
+2. Entrada sugerida, stop-loss y take-profit basados en el ATR
+3. Riesgo principal de mercado o liquidación
+Sé directo. Sin disclaimers.`;
 
-Sé concreto y directo. Sin disclaimers.`;
+  const promptBeg = `
+RESPONDÉ de forma simple y fácil de entender (sin jerga compleja):
+1. ¿Es buen momento para comprar o vender? ¿Por qué?
+2. Niveles de precios clave para vigilar
+3. Riesgo principal explicado simplemente
+Sé directo. Sin disclaimers.`;
+
+  const prompt = promptBase + (mode === "técnico" ? promptTech : promptBeg);
 
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {

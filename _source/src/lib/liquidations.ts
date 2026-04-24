@@ -1,6 +1,5 @@
 // Real-time liquidation data from Binance Futures WebSocket
 import { useEffect, useRef, useState, useMemo } from "react";
-import { ASSETS } from "./assets";
 
 export interface Liquidation {
   symbol: string;
@@ -28,7 +27,6 @@ export interface LiquidationCluster {
 export function useLiveLiquidations(maxKeep = 150) {
   const [liquidations, setLiquidations] = useState<Liquidation[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  const symbolSet = useMemo(() => new Set(ASSETS.map(a => a.perpSymbol)), []);
 
   useEffect(() => {
     const ws = new WebSocket("wss://fstream.binance.com/ws/!forceOrder@arr");
@@ -39,9 +37,6 @@ export function useLiveLiquidations(maxKeep = 150) {
         const msg = JSON.parse(ev.data);
         const o = msg.o;
         if (!o) return;
-
-        // Only track our universe
-        if (!symbolSet.has(o.s)) return;
 
         const price = +o.p;
         const qty = +o.q;

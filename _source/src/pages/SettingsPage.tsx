@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ASSETS } from "@/lib/assets";
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { AssetIcon } from "@/components/AssetIcon";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ export const SettingsPage = () => {
   const watchlist = useAppStore((s) => s.watchlist);
   const toggleWatch = useAppStore((s) => s.toggleWatch);
   const resetAll = useAppStore((s) => s.resetAll);
+  const { allAssets } = useUnifiedAssets("all");
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -57,21 +58,22 @@ export const SettingsPage = () => {
         </Panel>
 
         <Panel title="Gestor de Watchlist" className="col-span-12">
-          <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {ASSETS.map((a) => {
-              const on = watchlist.includes(a.symbol);
+          <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-[400px] overflow-auto">
+            {allAssets.map((a) => {
+              const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
+              const on = watchlist.includes(fetchSymbol);
               return (
                 <button
-                  key={a.symbol}
-                  onClick={() => toggleWatch(a.symbol)}
+                  key={fetchSymbol}
+                  onClick={() => toggleWatch(fetchSymbol)}
                   className={cn(
                     "rounded-lg p-3 flex items-center gap-2 border transition",
                     on ? "border-primary/50 bg-primary/10 shadow-violet" : "border-hairline bg-surface-2 hover:border-strong"
                   )}
                 >
-                  <AssetIcon symbol={a.symbol} size={20} />
+                  <AssetIcon symbol={fetchSymbol} size={20} />
                   <div className="text-left flex-1 min-w-0">
-                    <div className="text-xs font-semibold">{a.base}</div>
+                    <div className="text-xs font-semibold">{a.symbol}</div>
                     <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
                   </div>
                   {on && <Star className="h-3.5 w-3.5 fill-primary text-primary" />}

@@ -8,20 +8,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { useAppStore } from "@/lib/store";
 import { use24hTickers, useKlines, useMultiKlines } from "@/lib/api";
-import { ASSETS } from "@/lib/assets";
+import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { compactUsd, fmtPrice } from "@/lib/format";
 import { atr, assessTrade, computeCorrelationMatrix } from "@/lib/scoring";
 import { CheckCircle2, AlertTriangle, XCircle, Trash2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AssetIcon } from "@/components/AssetIcon";
 
-const CORR_SYMBOLS = ASSETS.slice(0, 10).map(a => a.symbol);
-
 export const RiskPage = () => {
   const positions = useAppStore((s) => s.positions);
   const addPosition = useAppStore((s) => s.addPosition);
   const removePosition = useAppStore((s) => s.removePosition);
   const { data: tickers } = use24hTickers();
+  const { allAssets } = useUnifiedAssets("all");
+
+  const binanceAssets = useMemo(() => allAssets.filter(a => a.source === "both"), [allAssets]);
+  const corrSymbols = useMemo(() => binanceAssets.slice(0, 10).map(a => a.binanceSymbol || `${a.symbol}USDT`), [binanceAssets]);
 
   // Add position form
   const [symbol, setSymbol] = useState("BTCUSDT");
@@ -46,7 +48,7 @@ export const RiskPage = () => {
   const totalExposure = positions.reduce((s, p) => s + p.size, 0);
 
   // Real correlation matrix
-  const { data: multiKlines } = useMultiKlines(CORR_SYMBOLS, "1d", 60);
+  const { data: multiKlines } = useMultiKlines(corrSymbols, "1d", 60);
   const corrMatrix = useMemo(() => {
     if (!multiKlines || Object.keys(multiKlines).length < 3) return null;
     return computeCorrelationMatrix(multiKlines);
@@ -77,7 +79,7 @@ export const RiskPage = () => {
               <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Activo</Label>
               <Select value={symbol} onValueChange={setSymbol}>
                 <SelectTrigger className="h-9 mt-1 bg-surface-2"><SelectValue /></SelectTrigger>
-                <SelectContent>{ASSETS.map((a) => <SelectItem key={a.symbol} value={a.symbol}>{a.base}</SelectItem>)}</SelectContent>
+                <SelectContent>{binanceAssets.map((a) => <SelectItem key={a.symbol} value={a.binanceSymbol || `${a.symbol}USDT`}>{a.symbol}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -146,7 +148,7 @@ export const RiskPage = () => {
                 <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Activo</Label>
                 <Select value={vSymbol} onValueChange={setVSymbol}>
                   <SelectTrigger className="h-9 mt-1 bg-surface-2"><SelectValue /></SelectTrigger>
-                  <SelectContent>{ASSETS.map((a) => <SelectItem key={a.symbol} value={a.symbol}>{a.base}</SelectItem>)}</SelectContent>
+                  <SelectContent>{binanceAssets.map((a) => <SelectItem key={a.symbol} value={a.binanceSymbol || `${a.symbol}USDT`}>{a.symbol}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
