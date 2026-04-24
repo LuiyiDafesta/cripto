@@ -16,6 +16,7 @@ export type DataSource = "all" | "binance" | "cmc";
 
 export interface EnrichedAsset extends UnifiedAsset {
   source: "binance" | "cmc" | "both";
+  onBinance: boolean;
   /** Simplified Smart Score for CMC-only coins (0-100) */
   cmcSmartScore: number;
 }
@@ -66,6 +67,7 @@ export function useUnifiedAssets(filter: DataSource = "all") {
       return {
         ...asset,
         source: onBinance ? "both" : "cmc",
+        onBinance,
         cmcSmartScore: computeCMCSmartScore(asset),
       } as EnrichedAsset;
     });
