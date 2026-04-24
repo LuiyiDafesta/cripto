@@ -7,6 +7,7 @@ import { ChangeChip } from "@/components/ChangeChip";
 import { AssetIcon } from "@/components/AssetIcon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { use24hTickers, useFundingRates, useKlines, useLongShortRatio, useOpenInterest, useFearGreed, useGlobalMacro, useBinanceSymbols } from "@/lib/api";
 import { computeSmartScore, atr, detectPatterns, assessTrade } from "@/lib/scoring";
 import { generateAssetAnalysis, type AIBrief } from "@/lib/ai-copilot";
