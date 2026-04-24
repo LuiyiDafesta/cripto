@@ -190,7 +190,7 @@ export async function generateAIBrief(params: {
   marketCapChange?: number;
   btcPrice?: number;
 }): Promise<AIBrief> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
 
   if (!apiKey) {
     // Fallback: generate local brief without LLM
@@ -273,7 +273,7 @@ export async function generateAssetAnalysis(params: {
   atr: number;
   mode?: "técnico" | "principiante";
 }): Promise<AIBrief> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
   const { symbol, base, score, price, change24h, fundingRate, patterns, atr: atrVal, mode = "técnico" } = params;
 
   const patternList = patterns.map(p => `${p.type} (${p.direction}, ${p.confidence}%): ${p.description}`).join("; ");
@@ -411,7 +411,7 @@ export async function generateGlobalMarketAnalysis(params: {
   ethDominance?: number;
   fearGreed?: number;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
   if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Sos un analista cripto institucional. Explicá en español argentino de manera CLARA, RESUMIDA y CONCISA el estado actual del mercado global.
@@ -441,7 +441,7 @@ export async function generateWhalesAnalysis(params: {
   liqTotalUsd: number;
   liqBias: string;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
   if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Analista on-chain. Resumen ejecutivo (en español argentino, jerga cripto) del flujo de ballenas y liquidaciones actuales.
@@ -470,7 +470,7 @@ export async function generateRiskAnalysis(params: {
   fearGreed: number;
   fundingAvg: number;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
   if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const prompt = `Gestor de riesgos cripto institucional. Explicá de forma detallada pero fácil de leer (español argentino) el riesgo macro actual del mercado.
@@ -497,7 +497,7 @@ export async function generateScannerAnalysis(params: {
   bearish: Array<any>;
   topScores: Array<any>;
 }): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY_B64 ? atob(import.meta.env.VITE_OPENAI_API_KEY_B64) : "";
   if (!apiKey) throw new Error("Falta la API Key de OpenAI para usar la IA.");
 
   const topBull = params.bullish.slice(0,3).map(x => x.base).join(", ");
