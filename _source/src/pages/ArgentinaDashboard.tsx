@@ -1,31 +1,33 @@
 import { Panel } from "@/components/Panel";
 import { AICopilot } from "@/components/AICopilot";
-import { Clock, TrendingUp, TrendingDown, Newspaper } from "lucide-react";
+import { Clock, TrendingUp, TrendingDown, Newspaper, Loader2 } from "lucide-react";
+import { useYahooQuotes } from "@/hooks/useYahooData";
 
 export const ArgentinaDashboard = () => {
-  const isMarketOpen = false; // Mock: Fuera de horario de mercado (11 a 17h)
-  
-  // Mock data para el borrador
-  const acciones = [
-    { symbol: "GGAL", price: 3450, change: 2.4, score: 85 },
-    { symbol: "YPFD", price: 28900, change: -1.2, score: 72 },
-    { symbol: "PAMP", price: 2150, change: 0.5, score: 68 },
-  ];
-  
-  const bonos = [
-    { symbol: "AL30", price: 62.5, change: 1.1, tir: "18.5%", score: 90 },
-    { symbol: "GD30", price: 65.2, change: 0.8, tir: "16.2%", score: 88 },
-  ];
+  const { data: quotes, isLoading } = useYahooQuotes([
+    "GGAL.BA", "YPFD.BA", "PAMP.BA", 
+    "AL30.BA", "GD30.BA", 
+    "AAPL.BA", "SPY.BA", 
+    "YCA6O.BA", "PTSTO.BA"
+  ]);
 
-  const cedears = [
-    { symbol: "AAPL", price: 18500, change: 3.2, score: 95 },
-    { symbol: "SPY", price: 32000, change: 1.5, score: 89 },
-  ];
+  const isMarketOpen = false; // Mock
+  
+  const getAssetData = (symbol: string, defaultTir?: string) => {
+    const quote = quotes?.find(q => q.symbol === symbol);
+    return {
+      symbol: symbol.replace('.BA', ''), // Limpiamos el .BA para mostrar
+      price: quote?.regularMarketPrice || 0,
+      change: quote?.regularMarketChangePercent || 0,
+      score: 85,
+      tir: defaultTir
+    };
+  };
 
-  const ons = [
-    { symbol: "YCA6O", price: 102.5, change: 0.1, tir: "8.5% USD", score: 75 },
-    { symbol: "PTSTO", price: 98.2, change: -0.5, tir: "9.2% USD", score: 70 },
-  ];
+  const acciones = ["GGAL.BA", "YPFD.BA", "PAMP.BA"].map(s => getAssetData(s));
+  const bonos = ["AL30.BA", "GD30.BA"].map((s, i) => getAssetData(s, i === 0 ? "18.5%" : "16.2%"));
+  const cedears = ["AAPL.BA", "SPY.BA"].map(s => getAssetData(s));
+  const ons = ["YCA6O.BA", "PTSTO.BA"].map((s, i) => getAssetData(s, i === 0 ? "8.5% USD" : "9.2% USD"));
 
   return (
     <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 max-w-[1600px] mx-auto">
@@ -54,16 +56,16 @@ export const ArgentinaDashboard = () => {
           {/* Tarjeta 1: Acciones Locales */}
           <Panel title="Acciones Líderes (Merval)">
             <div className="p-4 flex flex-col gap-3">
-              {acciones.map((a) => (
+              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : acciones.map((a) => (
                 <div key={a.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
                   <div className="flex flex-col">
                     <span className="font-semibold text-sm">{a.symbol}</span>
                     <span className="text-[10px] text-muted-foreground">Score: {a.score}/100</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${a.price}</span>
+                    <span className="font-medium text-sm">${a.price.toLocaleString('es-AR')}</span>
                     <span className={`text-[10px] font-semibold ${a.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {a.change >= 0 ? '+' : ''}{a.change}%
+                      {a.change >= 0 ? '+' : ''}{a.change.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -74,16 +76,16 @@ export const ArgentinaDashboard = () => {
           {/* Tarjeta 2: Bonos */}
           <Panel title="Bonos Soberanos">
             <div className="p-4 flex flex-col gap-3">
-              {bonos.map((b) => (
+              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : bonos.map((b) => (
                 <div key={b.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
                   <div className="flex flex-col">
                     <span className="font-semibold text-sm">{b.symbol}</span>
                     <span className="text-[10px] text-muted-foreground">TIR: {b.tir}</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">u$s {b.price}</span>
+                    <span className="font-medium text-sm">${b.price.toLocaleString('es-AR')}</span>
                     <span className={`text-[10px] font-semibold ${b.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {b.change >= 0 ? '+' : ''}{b.change}%
+                      {b.change >= 0 ? '+' : ''}{b.change.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -94,16 +96,16 @@ export const ArgentinaDashboard = () => {
           {/* Tarjeta 3: CEDEARs */}
           <Panel title="CEDEARs (Acciones Globales)">
             <div className="p-4 flex flex-col gap-3">
-              {cedears.map((c) => (
+              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : cedears.map((c) => (
                 <div key={c.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
                   <div className="flex flex-col">
                     <span className="font-semibold text-sm">{c.symbol}</span>
                     <span className="text-[10px] text-muted-foreground">Score: {c.score}/100</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${c.price}</span>
+                    <span className="font-medium text-sm">${c.price.toLocaleString('es-AR')}</span>
                     <span className={`text-[10px] font-semibold ${c.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {c.change >= 0 ? '+' : ''}{c.change}%
+                      {c.change >= 0 ? '+' : ''}{c.change.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -114,16 +116,16 @@ export const ArgentinaDashboard = () => {
           {/* Tarjeta 4: Obligaciones Negociables */}
           <Panel title="Obligaciones Negociables (ONs)">
             <div className="p-4 flex flex-col gap-3">
-              {ons.map((o) => (
+              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : ons.map((o) => (
                 <div key={o.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
                   <div className="flex flex-col">
                     <span className="font-semibold text-sm">{o.symbol}</span>
                     <span className="text-[10px] text-muted-foreground">TIR: {o.tir}</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">u$s {o.price}</span>
+                    <span className="font-medium text-sm">${o.price.toLocaleString('es-AR')}</span>
                     <span className={`text-[10px] font-semibold ${o.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {o.change >= 0 ? '+' : ''}{o.change}%
+                      {o.change >= 0 ? '+' : ''}{o.change.toFixed(2)}%
                     </span>
                   </div>
                 </div>
