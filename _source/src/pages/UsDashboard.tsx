@@ -1,27 +1,33 @@
 import { Panel } from "@/components/Panel";
-import { AICopilot } from "@/components/AICopilot";
-import { Clock, Newspaper, Loader2 } from "lucide-react";
+import { Clock, Newspaper, Loader2, TrendingUp, Sparkles, Building2 } from "lucide-react";
 import { useYahooQuotes } from "@/hooks/useYahooData";
+import { ChangeChip } from "@/components/ChangeChip";
+import { cn } from "@/lib/utils";
+
+const US_SYMBOLS = [
+  "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "TSM",
+  "WMT", "JPM", "V", "XOM", "UNH", "MA", "PG", "JNJ", "HD", "COST", "AMD", "^TNX"
+];
 
 export const UsDashboard = () => {
-  const { data: quotes, isLoading } = useYahooQuotes(["NVDA", "AAPL", "TSLA", "^TNX"]);
+  const { data: quotes, isLoading } = useYahooQuotes(US_SYMBOLS);
 
-  const isMarketOpen = true; // Todavía puede mejorarse con lógica de horario real
+  const isMarketOpen = true; 
   
-  // Mapear los datos de Yahoo a las tarjetas. Si está cargando, usamos placeholders vacíos o evitamos el error.
-  const acciones = ["NVDA", "AAPL", "TSLA"].map(sym => {
-    const quote = quotes?.find(q => q.symbol === sym);
+  const getQuote = (sym: string) => quotes?.find(q => q.symbol === sym);
+
+  const acciones = US_SYMBOLS.filter(s => s !== "^TNX").map(sym => {
+    const quote = getQuote(sym);
     return {
       symbol: sym,
+      name: quote?.shortName || sym,
       price: quote?.regularMarketPrice || 0,
       change: quote?.regularMarketChangePercent || 0,
-      score: 85, // Mock score
-      eps: quote?.epsTrailingTwelveMonths?.toFixed(2) || "-",
-      pe: quote?.trailingPE?.toFixed(1) || "-",
+      score: Math.floor(Math.random() * 40) + 60, // Mock score for now
     };
-  });
+  }).sort((a, b) => b.score - a.score);
 
-  const tnxQuote = quotes?.find(q => q.symbol === "^TNX");
+  const tnxQuote = getQuote("^TNX");
   const treasuries = [
     { 
       symbol: "US10Y (^TNX)", 
@@ -56,33 +62,41 @@ export const UsDashboard = () => {
         {/* Columna Izquierda: Paneles de activos */}
         <div className="col-span-1 lg:col-span-8 grid grid-cols-1 gap-4 lg:gap-6">
           
-          {/* Tarjeta 1: Acciones US */}
-          <Panel title="Top US Equities">
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Tarjeta 1: Acciones US - Lista como en Crypto */}
+          <Panel title="Top US Equities (Nasdaq, NYSE)">
+            <ul className="divide-y divide-hairline max-h-[500px] overflow-auto">
               {isLoading ? (
-                <div className="col-span-3 flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                <li className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></li>
               ) : (
-                acciones.map((a) => (
-                <div key={a.symbol} className="flex flex-col gap-2 p-4 rounded-lg bg-surface-2 border border-hairline hover:border-strong transition">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg leading-none">{a.symbol}</h3>
-                      <span className="text-[10px] text-muted-foreground">Score: {a.score}/100</span>
+                acciones.map((a, i) => (
+                  <li
+                    key={a.symbol}
+                    className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group"
+                  >
+                    <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                    <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
+                      <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-semibold">${a.price.toFixed(2)}</span>
-                      <span className={`text-[10px] font-bold ${a.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                        {a.change >= 0 ? '+' : ''}{a.change}%
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold">{a.symbol}</span>
+                        <ChangeChip value={a.change} />
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline text-[10px] text-muted-foreground">
-                    <span>EPS: {a.eps}</span>
-                    <span>P/E: {a.pe}</span>
-                  </div>
-                </div>
-              )))}
-            </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="num text-xs font-bold">${a.price.toFixed(2)}</span>
+                      <div className="flex items-center gap-1 text-[10px]">
+                        <span className="text-muted-foreground">Score:</span>
+                        <span className={cn("font-semibold", a.score > 80 ? "text-bull" : a.score < 50 ? "text-bear" : "text-warn")}>
+                          {a.score}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
           </Panel>
 
           {/* Tarjeta 2: Treasuries */}
@@ -109,9 +123,33 @@ export const UsDashboard = () => {
 
         {/* Columna Derecha: IA Copilot & Noticias */}
         <div className="col-span-1 lg:col-span-4 flex flex-col gap-4 lg:gap-6">
-          <Panel title="AI Copilot - Wall Street" className="flex-1 flex flex-col min-h-[400px]">
-             {/* El Copilot usará mock context de estos activos */}
-            <AICopilot context="Tech stocks are rallying today, led by NVDA (+4.5%) after strong AI server demand guidance. The US 10-year yield is up 5 bps to 4.25%, signaling persistent inflation concerns. Overall market sentiment is Bullish." />
+          
+          <Panel title={<span className="flex items-center gap-1.5">Copiloto IA - Wall Street</span>} 
+                 right={<span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary-glow uppercase tracking-wider flex items-center gap-1"><Sparkles className="h-2.5 w-2.5" /> IA</span>}>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-semibold text-bull bg-bull/10">
+                  Régimen: Alcista
+                </span>
+                <span className="text-xs text-muted-foreground">Mercado impulsado por sector tecnológico.</span>
+              </div>
+              <div className="text-sm leading-relaxed prose prose-invert prose-sm text-muted-foreground">
+                Las acciones tecnológicas (NVDA, MSFT, AAPL) continúan liderando el mercado impulsadas por los resultados en inteligencia artificial y semiconductores. El rendimiento del bono a 10 años ({tnxQuote ? tnxQuote.regularMarketPrice.toFixed(2) : "4.25"}%) se mantiene estable, quitando presión a los sectores de crecimiento.
+              </div>
+              <div className="space-y-1.5 pt-2">
+                <div className="text-[10px] uppercase tracking-wider text-bull flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" /> Destacados hoy
+                </div>
+                {acciones.slice(0, 3).map((a, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="px-1.5 py-0.5 rounded font-semibold bg-bull/20 text-bull">
+                      {a.symbol}
+                    </span>
+                    <span className="text-muted-foreground truncate">Fuerte momentum alcista. Score alto.</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </Panel>
 
           <Panel title="Financial News">

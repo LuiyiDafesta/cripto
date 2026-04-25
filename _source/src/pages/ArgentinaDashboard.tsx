@@ -1,33 +1,41 @@
 import { Panel } from "@/components/Panel";
-import { AICopilot } from "@/components/AICopilot";
-import { Clock, TrendingUp, TrendingDown, Newspaper, Loader2 } from "lucide-react";
+import { Clock, Newspaper, Loader2, Sparkles, TrendingUp, Building2, Landmark } from "lucide-react";
 import { useYahooQuotes } from "@/hooks/useYahooData";
+import { ChangeChip } from "@/components/ChangeChip";
+import { cn } from "@/lib/utils";
+
+const ARG_SYMBOLS = [
+  // Acciones
+  "GGAL.BA", "YPFD.BA", "PAMP.BA", "BMA.BA", "SUPV.BA", "EDN.BA", "CEPU.BA", "TXAR.BA", "ALUA.BA", "CRES.BA",
+  // Bonos
+  "AL30.BA", "GD30.BA", "AL29.BA", "GD29.BA", "AL35.BA", "GD35.BA",
+  // CEDEARs
+  "AAPL.BA", "SPY.BA", "QQQ.BA", "MSFT.BA", "KO.BA", "MELI.BA", "V.BA", "AMZN.BA",
+  // ONs
+  "YCA6O.BA", "PTSTO.BA", "IRC1O.BA"
+];
 
 export const ArgentinaDashboard = () => {
-  const { data: quotes, isLoading } = useYahooQuotes([
-    "GGAL.BA", "YPFD.BA", "PAMP.BA", 
-    "AL30.BA", "GD30.BA", 
-    "AAPL.BA", "SPY.BA", 
-    "YCA6O.BA", "PTSTO.BA"
-  ]);
+  const { data: quotes, isLoading } = useYahooQuotes(ARG_SYMBOLS);
 
   const isMarketOpen = false; // Mock
   
   const getAssetData = (symbol: string, defaultTir?: string) => {
     const quote = quotes?.find(q => q.symbol === symbol);
     return {
-      symbol: symbol.replace('.BA', ''), // Limpiamos el .BA para mostrar
+      symbol: symbol.replace('.BA', ''),
+      name: quote?.shortName || symbol.replace('.BA', ''),
       price: quote?.regularMarketPrice || 0,
       change: quote?.regularMarketChangePercent || 0,
-      score: 85,
+      score: Math.floor(Math.random() * 40) + 60, // Mock
       tir: defaultTir
     };
   };
 
-  const acciones = ["GGAL.BA", "YPFD.BA", "PAMP.BA"].map(s => getAssetData(s));
-  const bonos = ["AL30.BA", "GD30.BA"].map((s, i) => getAssetData(s, i === 0 ? "18.5%" : "16.2%"));
-  const cedears = ["AAPL.BA", "SPY.BA"].map(s => getAssetData(s));
-  const ons = ["YCA6O.BA", "PTSTO.BA"].map((s, i) => getAssetData(s, i === 0 ? "8.5% USD" : "9.2% USD"));
+  const acciones = ARG_SYMBOLS.slice(0, 10).map(s => getAssetData(s)).sort((a,b)=>b.score-a.score);
+  const bonos = ARG_SYMBOLS.slice(10, 16).map((s, i) => getAssetData(s, ["18.5%", "16.2%", "19.1%", "15.8%", "14.5%", "14.0%"][i]));
+  const cedears = ARG_SYMBOLS.slice(16, 24).map(s => getAssetData(s)).sort((a,b)=>b.score-a.score);
+  const ons = ARG_SYMBOLS.slice(24).map((s, i) => getAssetData(s, ["8.5% USD", "9.2% USD", "8.9% USD"][i]));
 
   return (
     <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 max-w-[1600px] mx-auto">
@@ -55,91 +63,146 @@ export const ArgentinaDashboard = () => {
           
           {/* Tarjeta 1: Acciones Locales */}
           <Panel title="Acciones Líderes (Merval)">
-            <div className="p-4 flex flex-col gap-3">
-              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : acciones.map((a) => (
-                <div key={a.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">{a.symbol}</span>
-                    <span className="text-[10px] text-muted-foreground">Score: {a.score}/100</span>
+            <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
+              {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : acciones.map((a, i) => (
+                <li key={a.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                  <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                  <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${a.price.toLocaleString('es-AR')}</span>
-                    <span className={`text-[10px] font-semibold ${a.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {a.change >= 0 ? '+' : ''}{a.change.toFixed(2)}%
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold">{a.symbol}</span>
+                      <ChangeChip value={a.change} />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
                   </div>
-                </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="num text-xs font-bold">${a.price.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <span className="text-muted-foreground">Score:</span>
+                      <span className={cn("font-semibold", a.score > 80 ? "text-bull" : a.score < 50 ? "text-bear" : "text-warn")}>{a.score}</span>
+                    </div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </Panel>
 
           {/* Tarjeta 2: Bonos */}
           <Panel title="Bonos Soberanos">
-            <div className="p-4 flex flex-col gap-3">
-              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : bonos.map((b) => (
-                <div key={b.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">{b.symbol}</span>
-                    <span className="text-[10px] text-muted-foreground">TIR: {b.tir}</span>
+            <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
+              {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : bonos.map((b, i) => (
+                <li key={b.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                  <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                  <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
+                    <Landmark className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${b.price.toLocaleString('es-AR')}</span>
-                    <span className={`text-[10px] font-semibold ${b.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {b.change >= 0 ? '+' : ''}{b.change.toFixed(2)}%
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold">{b.symbol}</span>
+                      <ChangeChip value={b.change} />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">Bono Soberano</div>
                   </div>
-                </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="num text-xs font-bold">${b.price.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <span className="text-muted-foreground">TIR:</span>
+                      <span className="font-semibold">{b.tir}</span>
+                    </div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </Panel>
 
           {/* Tarjeta 3: CEDEARs */}
           <Panel title="CEDEARs (Acciones Globales)">
-            <div className="p-4 flex flex-col gap-3">
-              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : cedears.map((c) => (
-                <div key={c.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">{c.symbol}</span>
-                    <span className="text-[10px] text-muted-foreground">Score: {c.score}/100</span>
+            <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
+              {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : cedears.map((c, i) => (
+                <li key={c.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                  <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                  <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${c.price.toLocaleString('es-AR')}</span>
-                    <span className={`text-[10px] font-semibold ${c.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {c.change >= 0 ? '+' : ''}{c.change.toFixed(2)}%
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold">{c.symbol}</span>
+                      <ChangeChip value={c.change} />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">{c.name}</div>
                   </div>
-                </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="num text-xs font-bold">${c.price.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <span className="text-muted-foreground">Score:</span>
+                      <span className={cn("font-semibold", c.score > 80 ? "text-bull" : c.score < 50 ? "text-bear" : "text-warn")}>{c.score}</span>
+                    </div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </Panel>
 
           {/* Tarjeta 4: Obligaciones Negociables */}
           <Panel title="Obligaciones Negociables (ONs)">
-            <div className="p-4 flex flex-col gap-3">
-              {isLoading ? <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : ons.map((o) => (
-                <div key={o.symbol} className="flex items-center justify-between p-3 rounded-md bg-surface-2 border border-hairline">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sm">{o.symbol}</span>
-                    <span className="text-[10px] text-muted-foreground">TIR: {o.tir}</span>
+            <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
+              {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : ons.map((o, i) => (
+                <li key={o.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                  <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                  <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
+                    <Landmark className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium text-sm">${o.price.toLocaleString('es-AR')}</span>
-                    <span className={`text-[10px] font-semibold ${o.change >= 0 ? 'text-bull' : 'text-bear'}`}>
-                      {o.change >= 0 ? '+' : ''}{o.change.toFixed(2)}%
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold">{o.symbol}</span>
+                      <ChangeChip value={o.change} />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">Obligación Corp.</div>
                   </div>
-                </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="num text-xs font-bold">${o.price.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <span className="text-muted-foreground">TIR:</span>
+                      <span className="font-semibold">{o.tir}</span>
+                    </div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </Panel>
 
         </div>
 
         {/* Columna Derecha: IA Copilot & Noticias */}
         <div className="col-span-1 lg:col-span-4 flex flex-col gap-4 lg:gap-6">
-          <Panel title="Análisis IA - Mercado Local" className="flex-1 flex flex-col min-h-[400px]">
-             {/* El Copilot usará mock context de estos activos */}
-            <AICopilot context="Mercado local cerrado. Los bonos soberanos AL30 y GD30 lideraron subas con fuerte compresión de TIR (promedio 16.2%). El CCL implicito cerró en $1150. Las ONs corporativas mantienen yields comprimidos entre 8% y 9%." />
+          <Panel title={<span className="flex items-center gap-1.5">Copiloto IA - Local</span>} 
+                 right={<span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary-glow uppercase tracking-wider flex items-center gap-1"><Sparkles className="h-2.5 w-2.5" /> IA</span>}>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded font-semibold text-bull bg-bull/10">
+                  Régimen: Alcista Moderado
+                </span>
+                <span className="text-xs text-muted-foreground">Mercado impulsado por bonos y bancos.</span>
+              </div>
+              <div className="text-sm leading-relaxed prose prose-invert prose-sm text-muted-foreground">
+                Mercado local firme. Los bonos soberanos AL30 y GD30 continúan liderando las subas con una fuerte compresión de TIR (promediando 16.2%). El CCL implícito se mantiene estabilizado. Las Obligaciones Negociables corporativas mantienen yields comprimidos entre 8% y 9%.
+              </div>
+              <div className="space-y-1.5 pt-2">
+                <div className="text-[10px] uppercase tracking-wider text-bull flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" /> Fuerte Momentum
+                </div>
+                {acciones.slice(0, 3).map((a, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="px-1.5 py-0.5 rounded font-semibold bg-bull/20 text-bull">
+                      {a.symbol}
+                    </span>
+                    <span className="text-muted-foreground truncate">Buen comportamiento relativo vs CCL.</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </Panel>
 
           <Panel title="Noticias BYMA">
