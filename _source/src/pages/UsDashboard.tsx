@@ -1,4 +1,5 @@
 import { Panel } from "@/components/Panel";
+import { useNavigate } from "react-router-dom";
 import { Clock, Newspaper, Loader2, TrendingUp, Sparkles, Building2 } from "lucide-react";
 import { useYahooQuotes } from "@/hooks/useYahooData";
 import { ChangeChip } from "@/components/ChangeChip";
@@ -10,9 +11,24 @@ const US_SYMBOLS = [
 ];
 
 export const UsDashboard = () => {
+  const navigate = useNavigate();
   const { data: quotes, isLoading } = useYahooQuotes(US_SYMBOLS);
 
-  const isMarketOpen = true; 
+  const isMarketOpen = (() => {
+    const now = new Date();
+    // Obtener la fecha y hora en New York
+    const nyTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = nyTime.getDay();
+    const hours = nyTime.getHours();
+    const minutes = nyTime.getMinutes();
+    
+    // De Lunes (1) a Viernes (5)
+    if (day === 0 || day === 6) return false;
+    
+    const timeInMinutes = hours * 60 + minutes;
+    // 09:30 = 570 mins, 16:00 = 960 mins
+    return timeInMinutes >= 570 && timeInMinutes <= 960;
+  })();
   
   const getQuote = (sym: string) => quotes?.find(q => q.symbol === sym);
 
@@ -71,6 +87,7 @@ export const UsDashboard = () => {
                 acciones.map((a, i) => (
                   <li
                     key={a.symbol}
+                    onClick={() => navigate(`/app/us/asset/${a.symbol}`)}
                     className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group"
                   >
                     <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>

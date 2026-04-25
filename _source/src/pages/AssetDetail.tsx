@@ -21,6 +21,7 @@ import { useUnifiedAssets } from "@/lib/useUnifiedAssets";
 import { cn } from "@/lib/utils";
 import { SourceBadge } from "@/components/SourceBadge";
 import { InfoTooltip } from "@/components/InfoTooltip";
+import { useYahooQuotes } from "@/hooks/useYahooData";
 
 // ErrorBoundary to prevent blank pages from chart crashes
 class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -43,7 +44,7 @@ const TIMEFRAMES = [
 ];
 
 export const AssetDetail = () => {
-  const { symbol = "BTCUSDT" } = useParams();
+  const { symbol = "BTCUSDT", market } = useParams();
   const navigate = useNavigate();
   const asset = getAsset(symbol);
   const baseName = asset?.base ?? symbol.replace("USDT", "");
@@ -82,10 +83,15 @@ export const AssetDetail = () => {
   const ticker = tickers?.find((t) => t.symbol === symbol);
   const fundingRate = funding?.find((f) => f.symbol === symbol)?.lastFundingRate;
 
-  // Price: prefer Binance ticker, fall back to CMC
+  // Yahoo Data (Only used for non-crypto markets)
+  const isTradFi = market === "us" || market === "argentina";
+  const { data: yahooQuotes } = useYahooQuotes(isTradFi ? [symbol] : []);
+  const yahooQuote = yahooQuotes?.[0];
+
+  // Price: prefer Binance ticker, fall back to CMC, then Yahoo
   const cmcQuote = cmcCoin?.quote?.USD;
-  const displayPrice = ticker?.lastPrice ?? cmcQuote?.price ?? 0;
-  const displayChange = ticker?.priceChangePercent ?? cmcQuote?.percent_change_24h ?? 0;
+  const displayPrice = isTradFi ? (yahooQuote?.regularMarketPrice ?? 0) : (ticker?.lastPrice ?? cmcQuote?.price ?? 0);
+  const displayChange = isTradFi ? (yahooQuote?.regularMarketChangePercent ?? 0) : (ticker?.priceChangePercent ?? cmcQuote?.percent_change_24h ?? 0);
 
   const breakdown = useMemo(() => {
     if (!klines || !klines1d || !btc1d) return null;
@@ -173,9 +179,10 @@ export const AssetDetail = () => {
               {baseName} <span className="text-muted-foreground font-normal text-sm">/USDT</span>
             </h1>
             <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-              {asset?.name ?? baseName}
-              {!isBinance && <SourceBadge source="cmc" size="xs" />}
+              {yahooQuote?.shortName ?? asset?.name ?? baseName}
+              {!isBinance && !isTradFi && <SourceBadge source="cmc" size="xs" />}
               {isBinance && <SourceBadge source="both" size="xs" />}
+              {isTradFi && <span className="px-1.5 py-0.5 rounded bg-surface-2 border border-hairline text-[10px] font-semibold text-muted-foreground">YAHOO</span>}
             </div>
           </div>
         </div>
@@ -191,8 +198,24 @@ export const AssetDetail = () => {
         </div>
       </div>
 
+      {/* TradFi-only info panel */}
+      {isTradFi && (
+        <div className="glass rounded-xl p-4 border border-indigo-500/20 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-semibold">TRADFI</span>
+            <span className="text-sm font-medium text-indigo-400">Datos de Mercado Tradicional</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <Stat label="Precio Actual" value={`$${fmtPrice(displayPrice)}`} />
+            <Stat label="Cambio" value={`${displayChange >= 0 ? '+' : ''}${displayChange.toFixed(2)}%`} color={displayChange >= 0 ? "text-bull" : "text-bear"} />
+            <Stat label="Fuente" value="Yahoo Finance" />
+            <Stat label="Mercado" value={market === "argentina" ? "BYMA" : "Wall Street"} />
+          </div>
+        </div>
+      )}
+
       {/* CMC-only info panel */}
-      {!isBinance && cmcQuote && (
+      {!isBinance && !isTradFi && cmcQuote && (
         <div className="glass rounded-xl p-4 border border-cyan-500/20 space-y-3">
           <div className="flex items-center gap-2">
             <SourceBadge source="cmc" size="xs" />
@@ -222,40 +245,50 @@ export const AssetDetail = () => {
           className="col-span-12 lg:col-span-9"
           title="Precio · Volumen"
           right={
-            <div className="flex gap-1">
-              {TIMEFRAMES.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setTf(t.value)}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded num",
-                    tf === t.value ? "bg-primary/20 text-primary-glow" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            !isTradFi && (
+              <div className="flex gap-1">
+                {TIMEFRAMES.map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setTf(t.value)}
+                    className={cn(
+                      "px-2 py-1 text-xs rounded num",
+                      tf === t.value ? "bg-primary/20 text-primary-glow" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )
           }
         >
           <div className="p-3">
             <ChartErrorBoundary>
-              <Candles
-                klines={klines ?? []}
-                height={460}
-                zones={patterns.slice(0, 4).map((p) => ({
-                  from: p.level,
-                  to: p.level,
-                  color: p.direction === "bullish" ? "#2ECC71" : "#E74C5A",
-                  label: p.type,
-                }))}
-              />
+              {isTradFi ? (
+                <div className="flex flex-col items-center justify-center h-[460px] text-sm text-muted-foreground">
+                  <div className="text-4xl mb-4 text-primary-glow/20">📈</div>
+                  Gráfico de velas para {symbol} estará disponible próximamente.
+                </div>
+              ) : (
+                <Candles
+                  klines={klines ?? []}
+                  height={460}
+                  zones={patterns.slice(0, 4).map((p) => ({
+                    from: p.level,
+                    to: p.level,
+                    color: p.direction === "bullish" ? "#2ECC71" : "#E74C5A",
+                    label: p.type,
+                  }))}
+                />
+              )}
             </ChartErrorBoundary>
           </div>
         </Panel>
 
-        {/* Score breakdown */}
-        <Panel title="Desglose Smart Score" className="col-span-12 lg:col-span-3">
+        {/* Score breakdown (solo cripto) */}
+        {!isTradFi && (
+          <Panel title="Desglose Smart Score" className="col-span-12 lg:col-span-3">
           <div className="p-4 space-y-2">
             {radarBars.map((b) => (
               <div key={b.label}>
@@ -273,62 +306,69 @@ export const AssetDetail = () => {
             ))}
           </div>
         </Panel>
+        )}
 
         {/* Stats row */}
-        <Panel title="Estadísticas 24h" className="col-span-6 lg:col-span-3">
-          <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-            <Stat label="Máx" value={"$" + fmtPrice(ticker?.highPrice)} />
-            <Stat label="Mín" value={"$" + fmtPrice(ticker?.lowPrice)} />
-            <Stat label="Volumen" value={compactUsd(ticker?.quoteVolume)} />
-            <Stat label="ATR(14)" value={fmtPrice(atrVal)} />
-          </div>
-        </Panel>
-        <Panel title="Funding y OI" className="col-span-6 lg:col-span-3">
-          <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-            <Stat label="Funding" value={fundingRate != null ? (fundingRate * 100).toFixed(4) + "%" : "—"} color={(fundingRate ?? 0) >= 0 ? "text-bull" : "text-bear"} />
-            <Stat label="Próximo" value={funding?.find((f) => f.symbol === symbol) ? new Date(funding.find((f) => f.symbol === symbol)!.nextFundingTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"} />
-            <Stat label="OI USD" value={oi?.length ? compactUsd(oi[oi.length - 1].sumOpenInterestValue) : "—"} />
-            <Stat label="Ratio L/S" value={lsr?.length ? lsr[lsr.length - 1].longShortRatio.toFixed(2) : "—"} />
-          </div>
-        </Panel>
-        <Panel title="Patrones detectados" className="col-span-12 lg:col-span-6">
-          <ul className="divide-y divide-hairline max-h-[180px] overflow-auto">
-            {patterns.length === 0 && <li className="p-4 text-xs text-muted-foreground">No hay patrones en este timeframe.</li>}
-            {patterns.map((p, i) => (
-              <li key={i} className="px-4 py-2.5 flex items-center gap-3">
-                <span className={cn("h-2 w-2 rounded-full", p.direction === "bullish" ? "bg-bull" : "bg-bear")} />
-                <span className="text-xs font-semibold">{p.type}</span>
-                <span className="text-xs text-muted-foreground flex-1">{p.description}</span>
-                <span className="num text-xs">{p.confidence}%</span>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        {!isTradFi && (
+          <>
+            <Panel title="Estadísticas 24h" className="col-span-6 lg:col-span-3">
+              <div className="p-4 grid grid-cols-2 gap-3 text-sm">
+                <Stat label="Máx" value={"$" + fmtPrice(ticker?.highPrice)} />
+                <Stat label="Mín" value={"$" + fmtPrice(ticker?.lowPrice)} />
+                <Stat label="Volumen" value={compactUsd(ticker?.quoteVolume)} />
+                <Stat label="ATR(14)" value={fmtPrice(atrVal)} />
+              </div>
+            </Panel>
+            <Panel title="Funding y OI" className="col-span-6 lg:col-span-3">
+              <div className="p-4 grid grid-cols-2 gap-3 text-sm">
+                <Stat label="Funding" value={fundingRate != null ? (fundingRate * 100).toFixed(4) + "%" : "—"} color={(fundingRate ?? 0) >= 0 ? "text-bull" : "text-bear"} />
+                <Stat label="Próximo" value={funding?.find((f) => f.symbol === symbol) ? new Date(funding.find((f) => f.symbol === symbol)!.nextFundingTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"} />
+                <Stat label="OI USD" value={oi?.length ? compactUsd(oi[oi.length - 1].sumOpenInterestValue) : "—"} />
+                <Stat label="Ratio L/S" value={lsr?.length ? lsr[lsr.length - 1].longShortRatio.toFixed(2) : "—"} />
+              </div>
+            </Panel>
+            <Panel title="Patrones detectados" className="col-span-12 lg:col-span-6">
+              <ul className="divide-y divide-hairline max-h-[180px] overflow-auto">
+                {patterns.length === 0 && <li className="p-4 text-xs text-muted-foreground">No hay patrones en este timeframe.</li>}
+                {patterns.map((p, i) => (
+                  <li key={i} className="px-4 py-2.5 flex items-center gap-3">
+                    <span className={cn("h-2 w-2 rounded-full", p.direction === "bullish" ? "bg-bull" : "bg-bear")} />
+                    <span className="text-xs font-semibold">{p.type}</span>
+                    <span className="text-xs text-muted-foreground flex-1">{p.description}</span>
+                    <span className="num text-xs">{p.confidence}%</span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </>
+        )}
 
         {/* Tabs */}
         <Panel className="col-span-12">
-          <Tabs defaultValue="plan">
+          <Tabs defaultValue={isTradFi ? "news" : "plan"}>
             <TabsList className="m-3">
-              <TabsTrigger value="plan">Plan de Trade</TabsTrigger>
+              {!isTradFi && <TabsTrigger value="plan">Plan de Trade</TabsTrigger>}
               <TabsTrigger value="ai">Análisis IA</TabsTrigger>
               <TabsTrigger value="news">Noticias</TabsTrigger>
-              <TabsTrigger value="corr">Correlaciones</TabsTrigger>
+              {!isTradFi && <TabsTrigger value="corr">Correlaciones</TabsTrigger>}
             </TabsList>
-            <TabsContent value="plan" className="p-4 pt-0">
-              {plan ? (
-                <div className="grid md:grid-cols-4 gap-3">
-                  <Stat label="Sesgo" value={plan.side === "long" ? "LARGO" : "CORTO"} color={plan.side === "long" ? "text-bull" : "text-bear"} />
-                  <Stat label="Entrada" value={"$" + fmtPrice(plan.entry)} />
-                  <Stat label="Stop" value={"$" + fmtPrice(plan.stop)} color="text-bear" />
-                  <Stat label="Objetivo" value={"$" + fmtPrice(plan.target)} color="text-bull" />
-                  <div className="md:col-span-4 flex items-center gap-3 pt-2 border-t border-hairline mt-2">
-                    <VerdictPill verdict={plan.verdict} />
-                    <span className="num text-sm">R:R {plan.rr.toFixed(2)}</span>
-                    <span className="text-xs text-muted-foreground">— {plan.reasons.concat(plan.warnings).join(" · ") || "Sin notas."}</span>
+            {!isTradFi && (
+              <TabsContent value="plan" className="p-4 pt-0">
+                {plan ? (
+                  <div className="grid md:grid-cols-4 gap-3">
+                    <Stat label="Sesgo" value={plan.side === "long" ? "LARGO" : "CORTO"} color={plan.side === "long" ? "text-bull" : "text-bear"} />
+                    <Stat label="Entrada" value={"$" + fmtPrice(plan.entry)} />
+                    <Stat label="Stop" value={"$" + fmtPrice(plan.stop)} color="text-bear" />
+                    <Stat label="Objetivo" value={"$" + fmtPrice(plan.target)} color="text-bull" />
+                    <div className="md:col-span-4 flex items-center gap-3 pt-2 border-t border-hairline mt-2">
+                      <VerdictPill verdict={plan.verdict} />
+                      <span className="num text-sm">R:R {plan.rr.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground">— {plan.reasons.concat(plan.warnings).join(" · ") || "Sin notas."}</span>
+                    </div>
                   </div>
-                </div>
-              ) : <div className="text-xs text-muted-foreground">Calculando plan…</div>}
-            </TabsContent>
+                ) : <div className="text-xs text-muted-foreground">Calculando plan…</div>}
+              </TabsContent>
+            )}
             <TabsContent value="ai" className="p-4 pt-0">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -375,24 +415,26 @@ export const AssetDetail = () => {
                   ))}
                 </ul>
               ) : (
-                <div className="text-xs text-muted-foreground">No hay noticias recientes para {asset?.base ?? symbol}. Consultá <Link to="/app/news" className="text-primary-glow hover:underline">el feed global</Link>.</div>
+                <div className="text-xs text-muted-foreground">No hay noticias recientes para {yahooQuote?.shortName ?? asset?.base ?? symbol}. Consultá <Link to="/app/news" className="text-primary-glow hover:underline">el feed global</Link>.</div>
               )}
             </TabsContent>
-            <TabsContent value="corr" className="p-4 pt-0">
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-1.5">
-                {allAssets?.filter(a => a.source === "both").slice(0, 20).map((a) => {
-                  const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
-                  const tx = tickers?.find((x) => x.symbol === fetchSymbol);
-                  const c = (tx?.priceChangePercent ?? 0) * (ticker?.priceChangePercent ?? 0) > 0 ? Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10)) : -Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10));
-                  const bg = c >= 0 ? `hsl(152 75% 45% / ${Math.abs(c) * 0.6 + 0.1})` : `hsl(350 85% 55% / ${Math.abs(c) * 0.6 + 0.1})`;
-                  return (
-                    <div key={fetchSymbol} className="aspect-square rounded flex items-center justify-center text-[10px] num font-semibold" style={{ background: bg }}>
-                      {a.symbol}
-                    </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
+            {!isTradFi && (
+              <TabsContent value="corr" className="p-4 pt-0">
+                <div className="grid grid-cols-5 md:grid-cols-10 gap-1.5">
+                  {allAssets?.filter(a => a.source === "both").slice(0, 20).map((a) => {
+                    const fetchSymbol = a.binanceSymbol || `${a.symbol}USDT`;
+                    const tx = tickers?.find((x) => x.symbol === fetchSymbol);
+                    const c = (tx?.priceChangePercent ?? 0) * (ticker?.priceChangePercent ?? 0) > 0 ? Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10)) : -Math.min(0.95, Math.abs((tx?.priceChangePercent ?? 0) / 10));
+                    const bg = c >= 0 ? `hsl(152 75% 45% / ${Math.abs(c) * 0.6 + 0.1})` : `hsl(350 85% 55% / ${Math.abs(c) * 0.6 + 0.1})`;
+                    return (
+                      <div key={fetchSymbol} className="aspect-square rounded flex items-center justify-center text-[10px] num font-semibold" style={{ background: bg }}>
+                        {a.symbol}
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </Panel>
       </div>

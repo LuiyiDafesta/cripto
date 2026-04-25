@@ -29,33 +29,50 @@ export function useYahooQuotes(symbols: string[], enabled = true) {
       if (symbols.length === 0) return [];
       
       const path = "/v8/finance/spark";
-      const params = `?symbols=${symbols.join(",")}`;
-      const url = getYahooBaseUrl(path, params);
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Yahoo fetch failed");
-      
-      const data = await res.json();
-      
       const results: YahooQuote[] = [];
-      for (const symbol of symbols) {
-        const item = data[symbol];
-        if (item) {
-          const closes = item.close || [];
-          const lastPrice = closes.length > 0 ? closes[closes.length - 1] : 0;
-          const prevClose = item.previousClose || lastPrice;
-          const change = lastPrice - prevClose;
-          const changePercent = prevClose ? (change / prevClose) * 100 : 0;
+
+      // Yahoo spark endpoint supports max 20 symbols per request
+      const CHUNK_SIZE = 20;
+      const chunks = [];
+      for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
+        chunks.push(symbols.slice(i, i + CHUNK_SIZE));
+      }
+
+      for (const chunk of chunks) {
+        const params = `?symbols=${chunk.join(",")}`;
+        const url = getYahooBaseUrl(path, params);
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            console.error(`Yahoo fetch failed for chunk ${chunk.join(",")} with status ${res.status}`);
+            continue;
+          }
           
-          results.push({
-            symbol: item.symbol || symbol,
-            shortName: item.symbol || symbol,
-            regularMarketPrice: lastPrice,
-            regularMarketChangePercent: changePercent,
-            regularMarketChange: change,
-            epsTrailingTwelveMonths: undefined,
-            trailingPE: undefined,
-          });
+          const data = await res.json();
+          
+          for (const symbol of chunk) {
+            const item = data[symbol];
+            if (item) {
+              const closes = item.close || [];
+              const lastPrice = closes.length > 0 ? closes[closes.length - 1] : 0;
+              const prevClose = item.previousClose || lastPrice;
+              const change = lastPrice - prevClose;
+              const changePercent = prevClose ? (change / prevClose) * 100 : 0;
+              
+              results.push({
+                symbol: item.symbol || symbol,
+                shortName: item.symbol || symbol,
+                regularMarketPrice: lastPrice,
+                regularMarketChangePercent: changePercent,
+                regularMarketChange: change,
+                epsTrailingTwelveMonths: undefined,
+                trailingPE: undefined,
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching chunk", e);
         }
       }
       

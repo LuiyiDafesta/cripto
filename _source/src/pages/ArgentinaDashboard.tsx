@@ -1,4 +1,5 @@
 import { Panel } from "@/components/Panel";
+import { useNavigate } from "react-router-dom";
 import { Clock, Newspaper, Loader2, Sparkles, TrendingUp, Building2, Landmark } from "lucide-react";
 import { useYahooQuotes } from "@/hooks/useYahooData";
 import { ChangeChip } from "@/components/ChangeChip";
@@ -16,9 +17,24 @@ const ARG_SYMBOLS = [
 ];
 
 export const ArgentinaDashboard = () => {
+  const navigate = useNavigate();
   const { data: quotes, isLoading } = useYahooQuotes(ARG_SYMBOLS);
 
-  const isMarketOpen = false; // Mock
+  const isMarketOpen = (() => {
+    const now = new Date();
+    // Obtener la fecha y hora en Buenos Aires
+    const baTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+    const day = baTime.getDay();
+    const hours = baTime.getHours();
+    const minutes = baTime.getMinutes();
+    
+    // De Lunes (1) a Viernes (5)
+    if (day === 0 || day === 6) return false;
+    
+    const timeInMinutes = hours * 60 + minutes;
+    // 11:00 = 660 mins, 17:00 = 1020 mins
+    return timeInMinutes >= 660 && timeInMinutes <= 1020;
+  })();
   
   const getAssetData = (symbol: string, defaultTir?: string) => {
     const quote = quotes?.find(q => q.symbol === symbol);
@@ -65,7 +81,7 @@ export const ArgentinaDashboard = () => {
           <Panel title="Acciones Líderes (Merval)">
             <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
               {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : acciones.map((a, i) => (
-                <li key={a.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                <li key={a.symbol} onClick={() => navigate(`/app/argentina/asset/${a.symbol}.BA`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
                   <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
                   <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
                     <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -93,7 +109,7 @@ export const ArgentinaDashboard = () => {
           <Panel title="Bonos Soberanos">
             <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
               {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : bonos.map((b, i) => (
-                <li key={b.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                <li key={b.symbol} onClick={() => navigate(`/app/argentina/asset/${b.symbol}.BA`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
                   <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
                   <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
                     <Landmark className="w-3.5 h-3.5 text-muted-foreground" />
@@ -121,7 +137,7 @@ export const ArgentinaDashboard = () => {
           <Panel title="CEDEARs (Acciones Globales)">
             <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
               {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : cedears.map((c, i) => (
-                <li key={c.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                <li key={c.symbol} onClick={() => navigate(`/app/argentina/asset/${c.symbol}.BA`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
                   <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
                   <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
                     <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -149,7 +165,7 @@ export const ArgentinaDashboard = () => {
           <Panel title="Obligaciones Negociables (ONs)">
             <ul className="divide-y divide-hairline max-h-[300px] overflow-auto">
               {isLoading ? <li className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></li> : ons.map((o, i) => (
-                <li key={o.symbol} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
+                <li key={o.symbol} onClick={() => navigate(`/app/argentina/asset/${o.symbol}.BA`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group">
                   <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
                   <div className="w-6 h-6 rounded-full bg-surface-3 flex items-center justify-center shrink-0">
                     <Landmark className="w-3.5 h-3.5 text-muted-foreground" />
