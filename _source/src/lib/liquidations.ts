@@ -72,7 +72,7 @@ export function useLiveLiquidations(maxKeep = 150) {
     return () => {
       try { ws.close(); } catch (_) {}
     };
-  }, [symbolSet, maxKeep]);
+  }, [maxKeep]);
 
   return liquidations;
 }
