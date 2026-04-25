@@ -102,6 +102,14 @@ export const useAppStore = create<AppState>()(
           alerts: [],
           triggeredHistory: [],
           positions: [],
+          settings: {
+            accent: "violet",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            refreshSeconds: 30,
+            maxRiskPerTrade: 1,
+            preferredRR: 2.5,
+            maxCorrelated: 3,
+          },
         }),
     }),
     { name: "cipherdesk-store" }

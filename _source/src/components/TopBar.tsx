@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { CommandPalette } from "./CommandPalette";
 
 export const TopBar = () => {
   const navigate = useNavigate();
   const setAuthed = useAppStore((s) => s.setAuthed);
+  const resetAll = useAppStore((s) => s.resetAll);
   const watchlist = useAppStore((s) => s.watchlist);
+  const { signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -50,7 +53,13 @@ export const TopBar = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await signOut();
+            } catch (err) {
+              console.error("Error signing out:", err);
+            }
+            resetAll();
             setAuthed(false);
             navigate("/login");
           }}
