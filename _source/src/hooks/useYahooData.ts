@@ -28,7 +28,7 @@ export function useYahooQuotes(symbols: string[], enabled = true) {
     queryFn: async () => {
       if (symbols.length === 0) return [];
       
-      const path = "/v7/finance/quote";
+      const path = "/v8/finance/spark";
       const params = `?symbols=${symbols.join(",")}`;
       const url = getYahooBaseUrl(path, params);
 
@@ -36,17 +36,30 @@ export function useYahooQuotes(symbols: string[], enabled = true) {
       if (!res.ok) throw new Error("Yahoo fetch failed");
       
       const data = await res.json();
-      const results = data.quoteResponse?.result || [];
       
-      return results.map((r: any) => ({
-        symbol: r.symbol,
-        shortName: r.shortName,
-        regularMarketPrice: r.regularMarketPrice,
-        regularMarketChangePercent: r.regularMarketChangePercent,
-        regularMarketChange: r.regularMarketChange,
-        epsTrailingTwelveMonths: r.epsTrailingTwelveMonths,
-        trailingPE: r.trailingPE,
-      })) as YahooQuote[];
+      const results: YahooQuote[] = [];
+      for (const symbol of symbols) {
+        const item = data[symbol];
+        if (item) {
+          const closes = item.close || [];
+          const lastPrice = closes.length > 0 ? closes[closes.length - 1] : 0;
+          const prevClose = item.previousClose || lastPrice;
+          const change = lastPrice - prevClose;
+          const changePercent = prevClose ? (change / prevClose) * 100 : 0;
+          
+          results.push({
+            symbol: item.symbol || symbol,
+            shortName: item.symbol || symbol,
+            regularMarketPrice: lastPrice,
+            regularMarketChangePercent: changePercent,
+            regularMarketChange: change,
+            epsTrailingTwelveMonths: undefined,
+            trailingPE: undefined,
+          });
+        }
+      }
+      
+      return results;
     },
     enabled: enabled && symbols.length > 0,
     refetchInterval: 60000, // Cada 1 minuto
