@@ -17,7 +17,9 @@ export const AppLayout = () => {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <TopTicker />
       <div className="flex-1 flex min-h-0">
-        <Sidebar />
+        <div className="hidden lg:flex">
+          <Sidebar />
+        </div>
         <div className="flex-1 flex flex-col min-w-0">
           <TopBar />
           <main className="flex-1 min-h-0 overflow-auto">

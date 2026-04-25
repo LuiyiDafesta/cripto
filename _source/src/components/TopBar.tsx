@@ -1,13 +1,19 @@
-import { Search, LogOut } from "lucide-react";
+import { Search, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { CommandPalette } from "./CommandPalette";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sidebar } from "./Sidebar";
 
 export const TopBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const market = location.pathname.split("/")[2] || "crypto";
+  
   const setAuthed = useAppStore((s) => s.setAuthed);
   const resetAll = useAppStore((s) => s.resetAll);
   const watchlist = useAppStore((s) => s.watchlist);
@@ -26,12 +32,43 @@ export const TopBar = () => {
   }, []);
 
   return (
-    <header className="h-14 border-b border-hairline bg-background/60 backdrop-blur-md flex items-center justify-between px-5 gap-4">
+    <header className="h-14 border-b border-hairline bg-background/60 backdrop-blur-md flex items-center justify-between px-4 lg:px-5 gap-3 lg:gap-4">
       <div className="flex items-center gap-3">
-        <h1 className="text-sm font-semibold tracking-wide">
+        {/* Mobile Menu Toggle */}
+        <div className="lg:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[68px] border-r-0 bg-sidebar">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <h1 className="text-sm font-semibold tracking-wide hidden sm:flex items-center">
           <span className="text-gradient-violet">CipherDesk</span>
-          <span className="text-muted-foreground/60 ml-2 text-xs uppercase tracking-[0.2em]">Terminal</span>
         </h1>
+
+        {/* Market Switcher */}
+        <Select 
+          value={market} 
+          onValueChange={(val) => {
+            const newPath = location.pathname.replace(`/app/${market}`, `/app/${val}`);
+            navigate(newPath);
+          }}
+        >
+          <SelectTrigger className="h-8 text-xs font-semibold w-[130px] lg:w-[150px] bg-surface-2 border-hairline shadow-none">
+            <SelectValue placeholder="Seleccionar Mercado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="crypto">🪙 Mercado Cripto</SelectItem>
+            <SelectItem value="argentina">🇦🇷 Mercado Argentino</SelectItem>
+            <SelectItem value="us">🇺🇸 Mercado US</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <button

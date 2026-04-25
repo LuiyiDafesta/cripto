@@ -7,7 +7,7 @@ import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./hooks/useAuth";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import { MarketDashboardWrapper } from "./pages/MarketDashboardWrapper";
 import ScannerPage from "./pages/ScannerPage";
 import SmartScorePage from "./pages/SmartScorePage";
 import WhalesPage from "./pages/WhalesPage";
@@ -72,17 +72,21 @@ const App = () => (
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="scanner" element={<ScannerPage />} />
-            <Route path="smart-score" element={<SmartScorePage />} />
-            <Route path="whales" element={<WhalesPage />} />
-            <Route path="risk" element={<RiskPage />} />
-            <Route path="news" element={<NewsPage />} />
-            <Route path="alerts" element={<AlertsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="asset/:symbol" element={<AssetDetail />} />
-            <Route path="markets" element={<MarketsPage />} />
+            <Route index element={<Navigate to="/app/crypto/dashboard" replace />} />
+            
+            <Route path=":market">
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<MarketDashboardWrapper />} />
+              <Route path="scanner" element={<ScannerPage />} />
+              <Route path="smart-score" element={<SmartScorePage />} />
+              <Route path="whales" element={<WhalesPage />} />
+              <Route path="risk" element={<RiskPage />} />
+              <Route path="news" element={<NewsPage />} />
+              <Route path="alerts" element={<AlertsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="asset/:symbol" element={<AssetDetail />} />
+              <Route path="markets" element={<MarketsPage />} />
+            </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

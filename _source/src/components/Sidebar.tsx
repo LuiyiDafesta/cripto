@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Radar,
@@ -14,20 +14,23 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 
-const NAV = [
-  { to: "/app/dashboard", icon: LayoutDashboard, label: "Panel", end: true },
-  { to: "/app/markets", icon: Globe, label: "Mercados" },
-  { to: "/app/scanner", icon: Radar, label: "Scanner" },
-  { to: "/app/smart-score", icon: Trophy, label: "Score" },
-  { to: "/app/whales", icon: Waves, label: "Ballenas" },
-  { to: "/app/risk", icon: ShieldCheck, label: "Riesgo" },
-  { to: "/app/news", icon: Newspaper, label: "Noticias" },
-  { to: "/app/alerts", icon: Bell, label: "Alertas" },
-  { to: "/app/settings", icon: Settings, label: "Ajustes" },
-];
-
 export const Sidebar = () => {
   const alertsCount = useAppStore((s) => s.alerts.filter((a) => a.enabled).length);
+  const location = useLocation();
+  const market = location.pathname.split("/")[2] || "crypto";
+  const baseUrl = `/app/${market}`;
+
+  const NAV = [
+    { to: `${baseUrl}/dashboard`, icon: LayoutDashboard, label: "Panel", end: true },
+    { to: `${baseUrl}/markets`, icon: Globe, label: "Mercados" },
+    { to: `${baseUrl}/scanner`, icon: Radar, label: "Scanner" },
+    { to: `${baseUrl}/smart-score`, icon: Trophy, label: "Score" },
+    { to: `${baseUrl}/whales`, icon: Waves, label: "Institucional" },
+    { to: `${baseUrl}/risk`, icon: ShieldCheck, label: "Riesgo" },
+    { to: `${baseUrl}/news`, icon: Newspaper, label: "Noticias" },
+    { to: `${baseUrl}/alerts`, icon: Bell, label: "Alertas" },
+    { to: `${baseUrl}/settings`, icon: Settings, label: "Ajustes" },
+  ];
 
   return (
     <aside className="w-[68px] shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col">
