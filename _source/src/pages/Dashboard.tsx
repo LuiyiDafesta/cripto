@@ -30,7 +30,7 @@ const HeatCell = ({ symbol, change, vol }: { symbol: string; change?: number; vo
     : `hsl(350 85% 55% / ${intensity})`;
   return (
     <button
-      onClick={() => navigate(`/app/asset/${symbol}`)}
+      onClick={() => navigate(`/app/crypto/asset/${symbol}`)}
       className="rounded-lg p-3 text-left flex flex-col gap-1 hover:scale-[1.03] transition-transform"
       style={{ background: bg, border: `1px solid ${border}` }}
       title={`${symbol} · vol ${compactUsd(vol)}`}
@@ -166,7 +166,7 @@ export const Dashboard = () => {
               return (
                 <li
                   key={r.symbol}
-                  onClick={() => navigate(`/app/asset/${r.symbol}`)}
+                  onClick={() => navigate(`/app/crypto/asset/${r.symbol}`)}
                   className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer transition group"
                 >
                   <span className="num text-[10px] text-muted-foreground w-4">{i + 1}</span>
@@ -207,7 +207,7 @@ export const Dashboard = () => {
               {opportunities.map((o, i) => (
                 <li
                   key={i}
-                  onClick={() => navigate(`/app/asset/${o.symbol}`)}
+                  onClick={() => navigate(`/app/crypto/asset/${o.symbol}`)}
                   className="px-4 py-3 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer animate-fade-in-up"
                 >
                   <AssetIcon symbol={o.symbol} size={26} />
@@ -238,7 +238,7 @@ export const Dashboard = () => {
           <Panel title={<span className="flex items-center gap-1.5">Avisos de riesgo <InfoTooltip title="Avisos de Riesgo" description="El sistema detecta automáticamente situaciones peligrosas: funding muy estirado (riesgo de squeeze), momentum caliente con estructura débil, o picos de volumen sobre setups pobres. Te ayuda a evitar trampas del mercado." /></span>} right={<AlertTriangle className="h-3.5 w-3.5 text-warn" />}>
             <ul className="divide-y divide-hairline">
               {riskWarnings.map((w, i) => (
-                <li key={i} onClick={() => navigate(`/app/asset/${w.symbol}`)} className="px-4 py-2.5 flex items-start gap-2 hover:bg-surface-2/40 cursor-pointer">
+                <li key={i} onClick={() => navigate(`/app/crypto/asset/${w.symbol}`)} className="px-4 py-2.5 flex items-start gap-2 hover:bg-surface-2/40 cursor-pointer">
                   <span className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", w.level === "high" ? "bg-bear" : "bg-warn")} />
                   <div className="min-w-0">
                     <div className="text-xs font-semibold">{w.symbol.replace("USDT", "")}</div>
@@ -337,7 +337,7 @@ const WatchlistMini = ({ tickers }: { tickers: Record<string, any> }) => {
       {list.map((sym) => {
         const t = tickers[sym];
         return (
-          <li key={sym} onClick={() => navigate(`/app/asset/${sym}`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer">
+          <li key={sym} onClick={() => navigate(`/app/crypto/asset/${sym}`)} className="px-4 py-2.5 flex items-center gap-3 hover:bg-surface-2/40 cursor-pointer">
             <AssetIcon symbol={sym} size={20} />
             <span className="text-xs font-semibold flex-1">{sym.replace("USDT", "")}</span>
             <span className="num text-xs">${t ? fmtPrice(t.lastPrice) : "—"}</span>

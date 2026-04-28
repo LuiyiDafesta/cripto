@@ -125,7 +125,7 @@ export const ScannerPage = () => {
         {allDetections.map((d) => (
           <button
             key={d.symbol}
-            onClick={() => navigate(`/app/asset/${d.symbol}`)}
+            onClick={() => navigate(`/app/crypto/asset/${d.symbol}`)}
             className="text-left glass rounded-xl p-4 hover:border-primary/40 transition cursor-pointer"
           >
             <div className="flex items-center gap-2 mb-3">

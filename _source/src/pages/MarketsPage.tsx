@@ -100,7 +100,7 @@ export const MarketsPage = () => {
 
   const handleClick = (a: UnifiedAsset) => {
     const targetSymbol = a.binanceSymbol || `${a.symbol}USDT`;
-    navigate(`/app/asset/${targetSymbol}`);
+    navigate(`/app/crypto/asset/${targetSymbol}`);
   };
 
   return (

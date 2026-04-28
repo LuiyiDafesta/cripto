@@ -29,7 +29,7 @@ export const CommandPalette = ({ open, onClose }: Props) => {
         <CommandEmpty>Sin resultados.</CommandEmpty>
         <CommandGroup heading="Activos">
           {allAssets.map((a) => (
-            <CommandItem key={a.symbol} value={`${a.symbol} ${a.name}`} onSelect={() => go(`/app/asset/${a.binanceSymbol || `${a.symbol}USDT`}`)}>
+            <CommandItem key={a.symbol} value={`${a.symbol} ${a.name}`} onSelect={() => go(`/app/crypto/asset/${a.binanceSymbol || `${a.symbol}USDT`}`)}>
               <span className="font-semibold mr-2">{a.symbol}</span>
               <span className="text-muted-foreground">{a.name}</span>
             </CommandItem>

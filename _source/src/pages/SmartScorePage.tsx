@@ -220,7 +220,7 @@ export const SmartScorePage = () => {
               {sorted.map((r, i) => (
                 <tr
                   key={r.symbol}
-                  onClick={() => r.source !== "cmc" ? navigate(`/app/asset/${r.symbol}`) : undefined}
+                  onClick={() => r.source !== "cmc" ? navigate(`/app/crypto/asset/${r.symbol}`) : undefined}
                   className={cn(
                     "border-b border-hairline hover:bg-surface-2/40 transition",
                     r.source !== "cmc" && "cursor-pointer",
